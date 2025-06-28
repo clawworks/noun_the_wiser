@@ -40,6 +40,40 @@ Each team and player should see real time updates as the game progresses. Additi
 - The app should follow immutability standards, so objects are not mutable. You can used the `freezed` package for this if you'd like, or just mark objects as `immutable`.
 - I have knowledge of Firebase cloud firestore, which could work for real time updates, but this is not a requirement, I am open for suggestions. 
 - There should be a clear and proper separation of concerns by creating a suitable folder structure.
-- Prefer smaller, readable widgets that can be composed rather than large ones
-- Prefer using flexible values and padding over hardcoded sizes when creating widgets inside rows/columns, ensuring UI adapts to various screen sizes properly
-- Use `log` from `dart:developer` rather than `print` or `debugPrint` for logging
+- Prefer smaller, readable widgets that can be composed rather than large ones.
+- Prefer using flexible values and padding over hardcoded sizes when creating widgets inside rows/columns, ensuring UI adapts to various screen sizes properly.
+- Use `log` from `dart:developer` rather than `print` or `debugPrint` for logging.
+- Address all linter errors/warnings/hints, keep up with the latest recommendations.
+- Keep up to date on packages.
+
+
+## FlowChart
+
+flowchart TD
+    A["Lobby / Join Game"]
+    B["Team Assignment"]
+    C["Noun Selection (Clue Giver)"]
+    D["Question Selection (Team)"]
+    E["Clue Giver Answers"]
+    F["Team Guesses"]
+    G["Badges / Progress"]
+    H["Game End / Winner"]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G -- "All badges?" --> H
+    G -- "Not yet" --> C
+    H --> A
+
+    %% Notes for parallel turns
+    D -.-> D2["Other Team: Question Selection"]
+    D2 -.-> E2["Other Clue Giver Answers"]
+    E2 -.-> F2["Other Team Guesses"]
+    F2 -.-> G
+
+    %% Optionally, add a loop for next round
+    G -- "Next Round" --> C

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "483807574554",
+    "project_id": "noun-the-wiser-ai",
+    "storage_bucket": "noun-the-wiser-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483807574554:android:aca07d6a43da638b34efa3",
+        "android_client_info": {
+          "package_name": "com.example.noun_the_wiser"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAn1qEkpWUXDT1cqc3yo52Wqhn7lZjYJ9g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

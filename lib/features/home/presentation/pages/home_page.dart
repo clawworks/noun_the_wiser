@@ -1,97 +1,179 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/theme_constants.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppConstants.appName),
-        automaticallyImplyLeading: false,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // App Logo/Icon
-            Icon(
-              Icons.psychology,
-              size: 120,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 32),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+          child: Column(
+            children: [
+              // Header with user info and sign out
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // User info
+                  authState.when(
+                    data:
+                        (user) =>
+                            user != null
+                                ? Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor:
+                                          Theme.of(context).colorScheme.primary,
+                                      child: Text(
+                                        user.name[0].toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: ThemeConstants.spacingSm,
+                                    ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Welcome, ${user.name}!',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyLarge?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if (user.isAnonymous)
+                                          Text(
+                                            'Anonymous User',
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall?.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.6),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                )
+                                : const SizedBox.shrink(),
+                    loading: () => const CircularProgressIndicator(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
 
-            // Welcome Text
-            Text(
-              'Welcome to',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  // Sign out button
+                  IconButton(
+                    onPressed: () => _showSignOutDialog(context, ref),
+                    icon: const Icon(Icons.logout),
+                    tooltip: 'Sign Out',
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              AppConstants.appName,
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'The ultimate team guessing game!',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 64),
 
-            // Game Options
-            _buildGameOption(
-              context,
-              icon: Icons.add_circle_outline,
-              title: 'Create New Game',
-              subtitle: 'Start a new game and invite friends',
-              onTap: () {
-                // TODO: Navigate to create game page
-                _showComingSoon(context);
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildGameOption(
-              context,
-              icon: Icons.join_full,
-              title: 'Join Game',
-              subtitle: 'Enter a join code to join existing game',
-              onTap: () {
-                // TODO: Navigate to join game page
-                _showComingSoon(context);
-              },
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: ThemeConstants.spacingXl),
 
-            // How to Play Button
-            TextButton.icon(
-              onPressed: () {
-                _showHowToPlay(context);
-              },
-              icon: const Icon(Icons.help_outline),
-              label: const Text('How to Play'),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.primary,
+              // Main content
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // App Logo/Icon
+                    Icon(
+                      Icons.psychology,
+                      size: 120,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: ThemeConstants.spacingLg),
+
+                    // Welcome Text
+                    Text(
+                      'Welcome to',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: ThemeConstants.spacingSm),
+                    Text(
+                      AppConstants.appName,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: ThemeConstants.spacingMd),
+                    Text(
+                      'The ultimate team guessing game!',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: ThemeConstants.spacingXl),
+
+                    // Game Options
+                    _buildGameOption(
+                      context,
+                      icon: Icons.add_circle_outline,
+                      title: 'Create New Game',
+                      subtitle: 'Start a new game and invite friends',
+                      onTap: () {
+                        // TODO: Navigate to create game page
+                        _showComingSoon(context);
+                      },
+                    ),
+                    const SizedBox(height: ThemeConstants.spacingMd),
+                    _buildGameOption(
+                      context,
+                      icon: Icons.join_full,
+                      title: 'Join Game',
+                      subtitle: 'Enter a join code to join existing game',
+                      onTap: () {
+                        // TODO: Navigate to join game page
+                        _showComingSoon(context);
+                      },
+                    ),
+                    const SizedBox(height: ThemeConstants.spacingLg),
+
+                    // How to Play Button
+                    TextButton.icon(
+                      onPressed: () {
+                        _showHowToPlay(context);
+                      },
+                      icon: const Icon(Icons.help_outline),
+                      label: const Text('How to Play'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -107,9 +189,9 @@ class HomePage extends ConsumerWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(ThemeConstants.spacingLg),
           child: Row(
             children: [
               Icon(
@@ -117,7 +199,7 @@ class HomePage extends ConsumerWidget {
                 size: 32,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: ThemeConstants.spacingMd),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,7 +209,7 @@ class HomePage extends ConsumerWidget {
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: ThemeConstants.spacingXs),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -150,6 +232,33 @@ class HomePage extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Sign Out'),
+            content: const Text('Are you sure you want to sign out?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  ref.read(authNotifierProvider.notifier).signOut();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                child: const Text('Sign Out'),
+              ),
+            ],
+          ),
     );
   }
 
@@ -187,17 +296,17 @@ class HomePage extends ConsumerWidget {
                     '1. Teams',
                     'Players are divided into two teams. Each team has one clue giver.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: ThemeConstants.spacingMd),
                   _buildHowToPlayStep(
                     '2. Categories',
                     'Teams compete to guess three nouns: Person, Place, and Thing.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: ThemeConstants.spacingMd),
                   _buildHowToPlayStep(
                     '3. Questions',
                     'Team members ask questions to their clue giver to get hints.',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: ThemeConstants.spacingMd),
                   _buildHowToPlayStep(
                     '4. Guessing',
                     'Make guesses based on the clues. First team to guess all three wins!',

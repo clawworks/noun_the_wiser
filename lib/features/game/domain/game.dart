@@ -11,7 +11,7 @@ class ColorJsonConverter implements JsonConverter<Color, int> {
   @override
   Color fromJson(int json) => Color(json);
   @override
-  int toJson(Color color) => color.value;
+  int toJson(Color color) => color.toARGB32();
 }
 
 enum GameStatus { waiting, inProgress, finished }
