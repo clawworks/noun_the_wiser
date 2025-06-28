@@ -61,6 +61,7 @@ The app should be built with Flutter to be used on iOS, Android and Web, and hav
 - The app should use Riverpod as the state management package. 
 - The app should follow immutability standards, so objects are not mutable. You can used the `freezed` package for this if you'd like, or just mark objects as `immutable`.
 - I have knowledge of Firebase cloud firestore, which could work for real time updates, but this is not a requirement, I am open for suggestions. 
+- Interactions with the Firestore DB should be transactions so that users do not overwrite each other's inputs or clash the game state, etc. 
 - There should be a clear and proper separation of concerns by creating a suitable folder structure.
 - Prefer smaller, readable widgets that can be composed rather than large ones.
 - Prefer using flexible values and padding over hardcoded sizes when creating widgets inside rows/columns, ensuring UI adapts to various screen sizes properly.

@@ -48,28 +48,42 @@ class FirebaseGameRepository implements GameRepository {
   @override
   Future<Game> joinGame(String joinCode, User user) async {
     try {
-      final game = await getGameByJoinCode(joinCode);
-      if (game == null) {
-        throw GameFailure('Game not found or already in progress');
-      }
+      return await _firestore.runTransaction<Game>((transaction) async {
+        // Get the game document within the transaction
+        final gameQuery =
+            await _firestore
+                .collection('games')
+                .where('joinCode', isEqualTo: joinCode)
+                .where('status', isEqualTo: GameStatus.waiting.name)
+                .limit(1)
+                .get();
 
-      // Check if user is already in the game
-      if (game.players.any((player) => player.id == user.id)) {
-        return game;
-      }
+        if (gameQuery.docs.isEmpty) {
+          throw GameFailure('Game not found or already in progress');
+        }
 
-      // Add user to the game
-      final updatedPlayers = [...game.players, user];
-      final updatedGame = game.copyWith(players: updatedPlayers);
+        final gameDoc = gameQuery.docs.first;
+        final gameData = gameDoc.data();
+        gameData['id'] = gameDoc.id;
+        final game = Game.fromJson(gameData);
 
-      // Convert players to JSON for Firebase
-      final playersJson = updatedPlayers.map((p) => p.toJson()).toList();
+        // Check if user is already in the game
+        if (game.players.any((player) => player.id == user.id)) {
+          return game;
+        }
 
-      await _firestore.collection('games').doc(game.id).update({
-        'players': playersJson,
+        // Add user to the game
+        final updatedPlayers = [...game.players, user];
+        final updatedGame = game.copyWith(players: updatedPlayers);
+
+        // Convert players to JSON for Firebase
+        final playersJson = updatedPlayers.map((p) => p.toJson()).toList();
+
+        // Update within the transaction
+        transaction.update(gameDoc.reference, {'players': playersJson});
+
+        return updatedGame;
       });
-
-      return updatedGame;
     } catch (e) {
       throw GameFailure('Failed to join game: $e');
     }
@@ -78,24 +92,31 @@ class FirebaseGameRepository implements GameRepository {
   @override
   Future<void> leaveGame(String gameId, String userId) async {
     try {
-      final gameDoc = await _firestore.collection('games').doc(gameId).get();
-      if (!gameDoc.exists) {
-        throw GameFailure('Game not found');
-      }
+      await _firestore.runTransaction<void>((transaction) async {
+        final gameDoc = await transaction.get(
+          _firestore.collection('games').doc(gameId),
+        );
 
-      final game = Game.fromJson({...gameDoc.data()!, 'id': gameDoc.id});
-      final updatedPlayers = game.players.where((p) => p.id != userId).toList();
+        if (!gameDoc.exists) {
+          throw GameFailure('Game not found');
+        }
 
-      if (updatedPlayers.isEmpty) {
-        // If no players left, delete the game
-        await _firestore.collection('games').doc(gameId).delete();
-      } else {
-        // Update the game with remaining players
-        final playersJson = updatedPlayers.map((p) => p.toJson()).toList();
-        await _firestore.collection('games').doc(gameId).update({
-          'players': playersJson,
-        });
-      }
+        final gameData = gameDoc.data()!;
+        gameData['id'] = gameDoc.id;
+        final game = Game.fromJson(gameData);
+
+        final updatedPlayers =
+            game.players.where((p) => p.id != userId).toList();
+
+        if (updatedPlayers.isEmpty) {
+          // If no players left, delete the game
+          transaction.delete(gameDoc.reference);
+        } else {
+          // Update the game with remaining players
+          final playersJson = updatedPlayers.map((p) => p.toJson()).toList();
+          transaction.update(gameDoc.reference, {'players': playersJson});
+        }
+      });
     } catch (e) {
       throw GameFailure('Failed to leave game: $e');
     }
@@ -104,8 +125,16 @@ class FirebaseGameRepository implements GameRepository {
   @override
   Future<void> updateGameStatus(String gameId, GameStatus status) async {
     try {
-      await _firestore.collection('games').doc(gameId).update({
-        'status': status.name,
+      await _firestore.runTransaction<void>((transaction) async {
+        final gameDoc = await transaction.get(
+          _firestore.collection('games').doc(gameId),
+        );
+
+        if (!gameDoc.exists) {
+          throw GameFailure('Game not found');
+        }
+
+        transaction.update(gameDoc.reference, {'status': status.name});
       });
     } catch (e) {
       throw GameFailure('Failed to update game status: $e');
@@ -115,11 +144,30 @@ class FirebaseGameRepository implements GameRepository {
   @override
   Future<void> updateGame(String gameId, Game game) async {
     try {
-      final gameData = game.toJson();
-      await _firestore
-          .collection('games')
-          .doc(gameId)
-          .set(gameData, SetOptions(merge: true));
+      await _firestore.runTransaction<void>((transaction) async {
+        final gameDoc = await transaction.get(
+          _firestore.collection('games').doc(gameId),
+        );
+
+        if (!gameDoc.exists) {
+          throw GameFailure('Game not found');
+        }
+
+        // Get current game data to check for conflicts
+        final currentGameData = gameDoc.data()!;
+        currentGameData['id'] = gameDoc.id;
+        final currentGame = Game.fromJson(currentGameData);
+
+        // Optional: Add version checking to prevent conflicts
+        // if (currentGame.version != game.version) {
+        //   throw GameFailure('Game has been updated by another player');
+        // }
+
+        final gameData = game.toJson();
+
+        // Use set with merge to ensure all fields are updated atomically
+        transaction.set(gameDoc.reference, gameData, SetOptions(merge: true));
+      });
     } catch (e) {
       throw GameFailure('Failed to update game: $e');
     }
@@ -163,9 +211,105 @@ class FirebaseGameRepository implements GameRepository {
   @override
   Future<void> deleteGame(String gameId) async {
     try {
-      await _firestore.collection('games').doc(gameId).delete();
+      await _firestore.runTransaction<void>((transaction) async {
+        final gameDoc = await transaction.get(
+          _firestore.collection('games').doc(gameId),
+        );
+
+        if (!gameDoc.exists) {
+          throw GameFailure('Game not found');
+        }
+
+        transaction.delete(gameDoc.reference);
+      });
     } catch (e) {
       throw GameFailure('Failed to delete game: $e');
+    }
+  }
+
+  /// Helper method for atomic team operations
+  Future<void> updateTeamInGame(
+    String gameId,
+    String teamId,
+    Team updatedTeam,
+  ) async {
+    try {
+      await _firestore.runTransaction<void>((transaction) async {
+        final gameDoc = await transaction.get(
+          _firestore.collection('games').doc(gameId),
+        );
+
+        if (!gameDoc.exists) {
+          throw GameFailure('Game not found');
+        }
+
+        final gameData = gameDoc.data()!;
+        gameData['id'] = gameDoc.id;
+        final game = Game.fromJson(gameData);
+
+        // Update the specific team
+        final updatedTeams =
+            game.teams.map((team) {
+              if (team.id == teamId) {
+                return updatedTeam;
+              }
+              return team;
+            }).toList();
+
+        final updatedGame = game.copyWith(teams: updatedTeams);
+        final newGameData = updatedGame.toJson();
+
+        transaction.set(
+          gameDoc.reference,
+          newGameData,
+          SetOptions(merge: true),
+        );
+      });
+    } catch (e) {
+      throw GameFailure('Failed to update team: $e');
+    }
+  }
+
+  /// Helper method for atomic player operations
+  Future<void> updatePlayerInGame(
+    String gameId,
+    String playerId,
+    User updatedPlayer,
+  ) async {
+    try {
+      await _firestore.runTransaction<void>((transaction) async {
+        final gameDoc = await transaction.get(
+          _firestore.collection('games').doc(gameId),
+        );
+
+        if (!gameDoc.exists) {
+          throw GameFailure('Game not found');
+        }
+
+        final gameData = gameDoc.data()!;
+        gameData['id'] = gameDoc.id;
+        final game = Game.fromJson(gameData);
+
+        // Update the specific player
+        final updatedPlayers =
+            game.players.map((player) {
+              if (player.id == playerId) {
+                return updatedPlayer;
+              }
+              return player;
+            }).toList();
+
+        final updatedGame = game.copyWith(players: updatedPlayers);
+        final newGameData = updatedGame.toJson();
+
+        transaction.set(
+          gameDoc.reference,
+          newGameData,
+          SetOptions(merge: true),
+        );
+      });
+    } catch (e) {
+      throw GameFailure('Failed to update player: $e');
     }
   }
 }
