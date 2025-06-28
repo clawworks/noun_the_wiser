@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../game/presentation/pages/create_game_page.dart';
+import '../../../game/presentation/pages/join_game_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -141,8 +143,11 @@ class HomePage extends ConsumerWidget {
                       title: 'Create New Game',
                       subtitle: 'Start a new game and invite friends',
                       onTap: () {
-                        // TODO: Navigate to create game page
-                        _showComingSoon(context);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const CreateGamePage(),
+                          ),
+                        );
                       },
                     ),
                     const SizedBox(height: ThemeConstants.spacingMd),
@@ -152,8 +157,11 @@ class HomePage extends ConsumerWidget {
                       title: 'Join Game',
                       subtitle: 'Enter a join code to join existing game',
                       onTap: () {
-                        // TODO: Navigate to join game page
-                        _showComingSoon(context);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const JoinGamePage(),
+                          ),
+                        );
                       },
                     ),
                     const SizedBox(height: ThemeConstants.spacingLg),
@@ -256,25 +264,6 @@ class HomePage extends ConsumerWidget {
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
                 child: const Text('Sign Out'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Coming Soon!'),
-            content: const Text(
-              'This feature is under development. Stay tuned!',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
               ),
             ],
           ),
