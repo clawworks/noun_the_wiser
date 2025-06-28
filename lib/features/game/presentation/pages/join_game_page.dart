@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/utils/join_code_generator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../providers/game_providers.dart';
+import 'game_lobby_page.dart';
 
 class JoinGamePage extends ConsumerStatefulWidget {
   const JoinGamePage({super.key});
@@ -35,11 +37,8 @@ class _JoinGamePageState extends ConsumerState<JoinGamePage> {
 
       final joinCode = _joinCodeController.text.trim().toUpperCase();
 
-      // TODO: Join game in Firebase
-      // await ref.read(gameRepositoryProvider).joinGame(joinCode, user);
-
-      // Simulate network delay
-      await Future.delayed(const Duration(milliseconds: 1000));
+      // Join game in Firebase
+      await ref.read(gameNotifierProvider.notifier).joinGame(joinCode, user);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -49,8 +48,8 @@ class _JoinGamePageState extends ConsumerState<JoinGamePage> {
           ),
         );
 
-        // TODO: Navigate to game lobby
-        _showComingSoon(context);
+        // Navigate to game lobby
+        _navigateToLobby();
       }
     } catch (error) {
       if (mounted) {
@@ -65,6 +64,15 @@ class _JoinGamePageState extends ConsumerState<JoinGamePage> {
       if (mounted) {
         setState(() => _isJoining = false);
       }
+    }
+  }
+
+  void _navigateToLobby() {
+    final game = ref.read(gameNotifierProvider).value;
+    if (game != null) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => GameLobbyPage(gameId: game.id)),
+      );
     }
   }
 
@@ -229,25 +237,6 @@ class _JoinGamePageState extends ConsumerState<JoinGamePage> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Coming Soon!'),
-            content: const Text(
-              'Game lobby and real-time gameplay features are under development.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
     );
   }
 }

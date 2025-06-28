@@ -9,10 +9,7 @@ part of 'game.dart';
 _$GameImpl _$$GameImplFromJson(Map<String, dynamic> json) => _$GameImpl(
   id: json['id'] as String,
   joinCode: json['joinCode'] as String,
-  players:
-      (json['players'] as List<dynamic>)
-          .map((e) => User.fromJson(e as Map<String, dynamic>))
-          .toList(),
+  players: _userListFromJson(json['players'] as List),
   teams:
       (json['teams'] as List<dynamic>)
           .map((e) => Team.fromJson(e as Map<String, dynamic>))
@@ -53,7 +50,7 @@ Map<String, dynamic> _$$GameImplToJson(_$GameImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'joinCode': instance.joinCode,
-      'players': instance.players,
+      'players': _userListToJson(instance.players),
       'teams': instance.teams,
       'status': _$GameStatusEnumMap[instance.status]!,
       'phase': _$GamePhaseEnumMap[instance.phase]!,

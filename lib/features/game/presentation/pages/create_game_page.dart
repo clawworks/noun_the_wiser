@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/utils/join_code_generator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../providers/game_providers.dart';
 import '../../domain/game.dart';
+import 'game_lobby_page.dart';
 
 class CreateGamePage extends ConsumerStatefulWidget {
   const CreateGamePage({super.key});
@@ -42,8 +44,8 @@ class _CreateGamePageState extends ConsumerState<CreateGamePage> {
       // Create the game
       final game = Game.create(joinCode: joinCode, creator: user);
 
-      // TODO: Save game to Firebase
-      // await ref.read(gameRepositoryProvider).createGame(game);
+      // Save game to Firebase
+      await ref.read(gameNotifierProvider.notifier).createGame(game);
 
       setState(() {
         _generatedJoinCode = joinCode;
@@ -96,6 +98,15 @@ class _CreateGamePageState extends ConsumerState<CreateGamePage> {
           );
         }
       }
+    }
+  }
+
+  void _navigateToLobby() {
+    final game = ref.read(gameNotifierProvider).value;
+    if (game != null) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => GameLobbyPage(gameId: game.id)),
+      );
     }
   }
 
@@ -291,12 +302,9 @@ class _CreateGamePageState extends ConsumerState<CreateGamePage> {
                   ),
                   const SizedBox(height: ThemeConstants.spacingLg),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Navigate to game lobby
-                      _showComingSoon(context);
-                    },
+                    onPressed: _navigateToLobby,
                     icon: const Icon(Icons.play_arrow),
-                    label: const Text('Start Game'),
+                    label: const Text('Go to Lobby'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.secondary,
                       foregroundColor:
@@ -313,25 +321,6 @@ class _CreateGamePageState extends ConsumerState<CreateGamePage> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Coming Soon!'),
-            content: const Text(
-              'Game lobby and real-time gameplay features are under development.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
     );
   }
 }

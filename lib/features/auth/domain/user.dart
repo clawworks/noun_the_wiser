@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:uuid/uuid.dart';
 
 part 'user.freezed.dart';
 part 'user.g.dart';
@@ -24,9 +25,7 @@ class User with _$User {
   }) {
     final now = DateTime.now();
     return User(
-      id:
-          now.millisecondsSinceEpoch
-              .toString(), // Will be replaced with proper ID generation
+      id: const Uuid().v4(), // Use proper UUID generation
       name: name,
       email: email,
       isAnonymous: isAnonymous,

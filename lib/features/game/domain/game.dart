@@ -23,6 +23,7 @@ class Game with _$Game {
   const factory Game({
     required String id,
     required String joinCode,
+    @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     required List<User> players,
     required List<Team> teams,
     @Default(GameStatus.waiting) GameStatus status,
@@ -49,6 +50,17 @@ class Game with _$Game {
       createdAt: DateTime.now(),
     );
   }
+}
+
+// Helper functions for JSON serialization of User lists
+List<Map<String, dynamic>> _userListToJson(List<User> users) {
+  return users.map((user) => user.toJson()).toList();
+}
+
+List<User> _userListFromJson(List<dynamic> json) {
+  return json
+      .map((item) => User.fromJson(item as Map<String, dynamic>))
+      .toList();
 }
 
 @freezed

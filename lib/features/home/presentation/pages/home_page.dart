@@ -90,94 +90,97 @@ class HomePage extends ConsumerWidget {
 
               // Main content
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // App Logo/Icon
-                    Icon(
-                      Icons.psychology,
-                      size: 120,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: ThemeConstants.spacingLg),
-
-                    // Welcome Text
-                    Text(
-                      'Welcome to',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: ThemeConstants.spacingSm),
-                    Text(
-                      AppConstants.appName,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // App Logo/Icon
+                      Icon(
+                        Icons.psychology,
+                        size: 120,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: ThemeConstants.spacingMd),
-                    Text(
-                      'The ultimate team guessing game!',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(
+                      const SizedBox(height: ThemeConstants.spacingLg),
+
+                      // Welcome Text
+                      Text(
+                        'Welcome to',
+                        style: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ).textTheme.headlineMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: ThemeConstants.spacingXl),
-
-                    // Game Options
-                    _buildGameOption(
-                      context,
-                      icon: Icons.add_circle_outline,
-                      title: 'Create New Game',
-                      subtitle: 'Start a new game and invite friends',
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const CreateGamePage(),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: ThemeConstants.spacingMd),
-                    _buildGameOption(
-                      context,
-                      icon: Icons.join_full,
-                      title: 'Join Game',
-                      subtitle: 'Enter a join code to join existing game',
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const JoinGamePage(),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: ThemeConstants.spacingLg),
-
-                    // How to Play Button
-                    TextButton.icon(
-                      onPressed: () {
-                        _showHowToPlay(context);
-                      },
-                      icon: const Icon(Icons.help_outline),
-                      label: const Text('How to Play'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.primary,
+                      const SizedBox(height: ThemeConstants.spacingSm),
+                      Text(
+                        AppConstants.appName,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: ThemeConstants.spacingMd),
+                      Text(
+                        'The ultimate team guessing game!',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingXl),
+
+                      // Game Options
+                      _buildGameOption(
+                        context,
+                        icon: Icons.add_circle_outline,
+                        title: 'Create New Game',
+                        subtitle: 'Start a new game and invite friends',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const CreateGamePage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingMd),
+                      _buildGameOption(
+                        context,
+                        icon: Icons.join_full,
+                        title: 'Join Game',
+                        subtitle: 'Enter a join code to join existing game',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const JoinGamePage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingLg),
+
+                      // How to Play Button
+                      TextButton.icon(
+                        onPressed: () {
+                          _showHowToPlay(context);
+                        },
+                        icon: const Icon(Icons.help_outline),
+                        label: const Text('How to Play'),
+                        style: TextButton.styleFrom(
+                          foregroundColor:
+                              Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

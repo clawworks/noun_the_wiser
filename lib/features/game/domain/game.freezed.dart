@@ -23,6 +23,7 @@ Game _$GameFromJson(Map<String, dynamic> json) {
 mixin _$Game {
   String get id => throw _privateConstructorUsedError;
   String get joinCode => throw _privateConstructorUsedError;
+  @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
   List<User> get players => throw _privateConstructorUsedError;
   List<Team> get teams => throw _privateConstructorUsedError;
   GameStatus get status => throw _privateConstructorUsedError;
@@ -55,6 +56,7 @@ abstract class $GameCopyWith<$Res> {
   $Res call({
     String id,
     String joinCode,
+    @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     List<User> players,
     List<Team> teams,
     GameStatus status,
@@ -196,6 +198,7 @@ abstract class _$$GameImplCopyWith<$Res> implements $GameCopyWith<$Res> {
   $Res call({
     String id,
     String joinCode,
+    @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     List<User> players,
     List<Team> teams,
     GameStatus status,
@@ -328,6 +331,7 @@ class _$GameImpl implements _Game {
   const _$GameImpl({
     required this.id,
     required this.joinCode,
+    @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     required final List<User> players,
     required final List<Team> teams,
     this.status = GameStatus.waiting,
@@ -355,6 +359,7 @@ class _$GameImpl implements _Game {
   final String joinCode;
   final List<User> _players;
   @override
+  @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
   List<User> get players {
     if (_players is EqualUnmodifiableListView) return _players;
     // ignore: implicit_dynamic_type
@@ -489,6 +494,7 @@ abstract class _Game implements Game {
   const factory _Game({
     required final String id,
     required final String joinCode,
+    @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     required final List<User> players,
     required final List<Team> teams,
     final GameStatus status,
@@ -511,6 +517,7 @@ abstract class _Game implements Game {
   @override
   String get joinCode;
   @override
+  @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
   List<User> get players;
   @override
   List<Team> get teams;
