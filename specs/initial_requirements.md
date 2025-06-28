@@ -26,11 +26,20 @@ Each team and player should see real time updates as the game progresses. Additi
 
 - The app should use light and dark mode, and default to the users device preference. 
 - Theming should be done by setting the `theme` in the `MaterialApp`, rather than using hardcoded colors and sizes in the widgets.
+- Style should be very clean, open feel. Not very boxy. In general I don't see the need for a typical app bar, just action buttons if needed.
+- Some of the color scheme should include the following colors, you decide where they fit in the color scheme best:
+    - #57CC02
+    - #1CB0F6
+    - #6A5FE8
+    - #FFC702
 
 
 ## Code Style
 
 - The app should use Riverpod as the state management package. 
+- The app should follow immutability standards, so objects are not mutable. You can used the `freezed` package for this if you'd like, or just mark objects as `immutable`.
 - I have knowledge of Firebase cloud firestore, which could work for real time updates, but this is not a requirement, I am open for suggestions. 
 - There should be a clear and proper separation of concerns by creating a suitable folder structure.
-- 
+- Prefer smaller, readable widgets that can be composed rather than large ones
+- Prefer using flexible values and padding over hardcoded sizes when creating widgets inside rows/columns, ensuring UI adapts to various screen sizes properly
+- Use `log` from `dart:developer` rather than `print` or `debugPrint` for logging
