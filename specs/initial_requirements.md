@@ -20,8 +20,14 @@ The app should be built with Flutter to be used on iOS, Android and Web, and hav
 ## Real Time updates
 
 - Each team and player should see real time updates as the game progresses. 
+
+## Teams
+- Start with two teams, eventually we could potentially add more, but let's keep it to two for now. 
+- Allow teams to pick their color, start with Green (#57CC02) and Blue (#1CB0F6) initially though. Then add more options to choose from later.
 - Additionally, It would be nice to see when players are online or not too, like if their phone went to sleep.
     - Teams should be able to skip cluegivers if they are offline. This could be done by allowing any team member to manually choose to become the clue giver for their team if the assigned person could not do it. 
+    - Players should also be able to switch teams at any point if they desire. 
+
 
 ## Provided Nouns for each category (Person, Place, Thing), and questions
 
