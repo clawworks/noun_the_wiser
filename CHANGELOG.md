@@ -63,41 +63,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented development tools and utilities
   - Created Firebase setup documentation
 
+- **Team Assignment Page**: Complete UI for team assignment phase with:
+  - Real-time team display with player lists
+  - Team color customization with color picker
+  - Player team switching functionality
+  - Host controls to start the game
+  - Visual indicators for current user's team
+- **Clue Giver Selection Page**: UI for clue giver assignment phase with:
+  - Display of assigned clue givers for each team
+  - Manual clue giver reassignment functionality
+  - Visual distinction between clue givers and regular players
+  - Host controls to continue to game
+- **Game Log Widget**: Reusable component for displaying game events with:
+  - Different entry types (system, player, team, clue, score, game event)
+  - Timestamp formatting and auto-scroll
+  - Color-coded entries based on type
+  - Player name and team color display
+  - Refresh functionality
+- **Team Chat Widget**: Real-time team communication component with:
+  - Message bubbles with team color theming
+  - User avatars and timestamps
+  - Auto-scroll to latest messages
+  - Input field with send button
+  - Error and empty states
+- **Navigation Flow**: Automatic navigation between game phases:
+  - Lobby → Team Assignment → Clue Giver Selection
+  - Real-time status change detection
+  - Proper page transitions
+
+### Changed
+- Updated game lobby to navigate to team assignment page instead of showing "coming soon"
+- Enhanced team assignment page with proper auth provider integration
+- Improved UI consistency across all game phases
+
 ### Fixed
-- **Serialization Issues**
-  - Fixed User object serialization in Game model for Firestore compatibility
-  - Resolved JSON conversion issues with nested User objects
-  - Added custom JSON serialization for User lists
-  - Regenerated freezed files to ensure proper code generation
+- **Team Serialization Error**: Fixed `Invalid argument: Instance of '_$TeamImpl'` error
+  - Added custom JSON converter for Team lists in Game model
+  - Updated `_teamListToJson` and `_teamListFromJson` functions
+  - Regenerated freezed files with proper Team serialization
+- **State Modification Error**: Fixed "trying to modify state in a build method" error
+  - Removed automatic navigation from build method
+  - Simplified to manual "Start Game" button navigation only
+  - Added better error handling and logging
+- **Provider State Modification**: Fixed StateNotifierListenerError in team assignment page
+  - Moved `watchGame` calls to post-frame callbacks in `initState`
+  - Prevented provider state modification during widget lifecycle
+  - Applied fix to both team assignment and clue giver selection pages
+- **UI Overflow**: Fixed RenderFlex overflow in game lobby
+  - Made join code Row more flexible with Flexible widgets
+  - Prevented text overflow on smaller screens
+- **Build Method Issues**: Removed problematic state modifications during build
+  - Eliminated timer-based navigation that caused conflicts
+  - Improved reliability of game flow
 
-- **Data Consistency & Race Conditions**
-  - Implemented Firestore transactions for all game state changes
-  - Fixed race conditions when multiple players join/leave simultaneously
-  - Added atomic operations for team and player updates
-  - Prevented data corruption from concurrent user interactions
-  - Added proper error handling for transaction failures
-
-- **Platform Compatibility**
-  - Fixed iOS deployment target issues (updated to 13.0)
-  - Resolved CocoaPods dependency conflicts
-  - Fixed UI overflow issues with responsive design
-  - Ensured cross-platform compatibility (iOS, Android, Web)
-
-- **Code Quality**
-  - Fixed linter errors and deprecated API usage
-  - Removed obsolete generated files
-  - Updated imports and dependencies
-  - Replaced deprecated color property usage
-  - Added proper type safety throughout the codebase
-
-### Technical Details
-- **Architecture**: Clean Architecture with feature-based organization
-- **State Management**: Riverpod with immutable state
-- **Backend**: Firebase Firestore for real-time data
-- **Authentication**: Firebase Auth with anonymous and email/password support
-- **UI Framework**: Flutter with Material 3 design system
-- **Code Generation**: Freezed for immutable models and JSON serialization
-- **Platforms**: iOS, Android, and Web support
+### Technical
+- Fixed auth provider usage in team assignment page
+- Added proper imports and navigation between game pages
+- Implemented reusable UI components for future game phases
+- Enhanced error handling throughout the game flow
 
 ## [0.1.0] - Initial Development Phase
 - Project initialization and foundation setup
@@ -140,4 +163,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - App store preparation
    - Testing and bug fixes
    - Performance monitoring
-   - User feedback integration 
+   - User feedback integration
+
+## [0.3.0] - 2024-01-XX
+
+### Added
+- **Game Logic Service**: Core game mechanics implementation
+  - Team assignment with automatic balancing
+  - Clue giver selection (automatic and manual)
+  - Noun and question selection from categories
+  - Turn management and progression
+  - Badge awarding system
+  - Win condition checking
+  - Clue validation and scoring
+- **Enhanced Game Notifier**: Integration with game logic service
+  - Real-time game state updates
+  - Firestore transaction support
+  - Concurrent update prevention
+  - Game phase transitions
+- **Team Management**: Advanced team features
+  - Team color customization
+  - Player team switching
+  - Manual clue giver assignment
+  - Team balance validation
+
+### Changed
+- **Game Model**: Enhanced with new fields and methods
+  - Added team colors, clue givers, current turn tracking
+  - Added game log, team chat, and scoring fields
+  - Improved JSON serialization for nested objects
+- **Repository Layer**: Firebase transaction support
+  - Atomic updates to prevent race conditions
+  - Better error handling and data consistency
+  - Real-time synchronization improvements
+
+### Technical
+- Fixed serialization issues with User lists in Game model
+- Added custom JSON converters for complex data structures
+- Regenerated freezed files with proper serialization
+- Enhanced error handling throughout the game flow
+
+## [0.2.0] - 2024-01-XX
+
+### Added
+- **Firebase Integration**: Complete backend setup
+  - Real-time game lobby with Firestore
+  - Player join/leave functionality
+  - Game status management
+  - Real-time updates across devices
+- **Game Repository**: Firebase-based game management
+  - Create, join, and manage games
+  - Real-time game state synchronization
+  - Player management and validation
+- **Authentication**: Firebase Auth integration
+  - Anonymous sign-in with custom names
+  - Email/password authentication
+  - User profile management
+  - Secure user sessions
+
+### Changed
+- **Architecture**: Migrated to clean architecture
+  - Separated data, domain, and presentation layers
+  - Repository pattern for data access
+  - Use case pattern for business logic
+  - Riverpod for state management
+- **Models**: Immutable data models with freezed
+  - User model with proper serialization
+  - Game model with teams and players
+  - Type-safe data structures
+
+### Technical
+- Fixed nested User object serialization
+- Added proper JSON converters
+- Regenerated freezed files
+- Enhanced error handling
+
+## [0.1.0] - 2024-01-XX
+
+### Added
+- **Project Setup**: Initial Flutter project structure
+  - Clean architecture foundation
+  - Riverpod state management
+  - Firebase configuration
+  - Basic UI components
+- **Core Features**: Essential game components
+  - User authentication system
+  - Game creation and joining
+  - Basic lobby functionality
+  - Team management structure
+- **UI Foundation**: Modern, responsive design
+  - Material Design 3 theming
+  - Consistent spacing and typography
+  - Error and loading states
+  - Responsive layouts
+
+### Technical
+- Initial project setup with Flutter
+- Firebase project configuration
+- Basic state management with Riverpod
+- Clean architecture implementation 

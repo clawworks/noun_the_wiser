@@ -6,6 +6,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/domain/user.dart';
 import '../providers/game_providers.dart';
 import '../../domain/game.dart';
+import '../pages/team_assignment_page.dart';
 
 class GameLobbyPage extends ConsumerStatefulWidget {
   final String gameId;
@@ -98,18 +99,22 @@ class _GameLobbyPageState extends ConsumerState<GameLobbyPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'Join Code: ',
-                          style: Theme.of(context).textTheme.bodyLarge,
+                        Flexible(
+                          child: Text(
+                            'Join Code: ',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
                         ),
-                        Text(
-                          game.joinCode,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
-                            color: Theme.of(context).colorScheme.primary,
+                        Flexible(
+                          child: Text(
+                            game.joinCode,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ),
                         const SizedBox(width: ThemeConstants.spacingMd),
@@ -439,14 +444,22 @@ class _GameLobbyPageState extends ConsumerState<GameLobbyPage> {
 
   Future<void> _startGame(Game game) async {
     try {
-      await ref
-          .read(gameNotifierProvider.notifier)
-          .updateGameStatus(widget.gameId, GameStatus.inProgress);
+      print('Starting game: ${widget.gameId}');
+      await ref.read(gameNotifierProvider.notifier).startGame(widget.gameId);
+      print('Game started successfully');
+
       if (mounted) {
-        // TODO: Navigate to game screen
-        _showComingSoon(context);
+        // Navigate to team assignment page
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => TeamAssignmentPage(gameId: widget.gameId),
+          ),
+        );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error starting game: $e');
+      print('Stack trace: $stackTrace');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -456,24 +469,5 @@ class _GameLobbyPageState extends ConsumerState<GameLobbyPage> {
         );
       }
     }
-  }
-
-  void _showComingSoon(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Coming Soon!'),
-            content: const Text(
-              'The actual gameplay features are under development.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-    );
   }
 }

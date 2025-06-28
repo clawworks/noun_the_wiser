@@ -36,6 +36,7 @@ class Game with _$Game {
     required String joinCode,
     @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     required List<User> players,
+    @JsonKey(toJson: _teamListToJson, fromJson: _teamListFromJson)
     required List<Team> teams,
     @Default(GameStatus.waiting) GameStatus status,
     @Default(GamePhase.teamSelection) GamePhase phase,
@@ -166,5 +167,16 @@ List<Map<String, dynamic>> _userListToJson(List<User> users) {
 List<User> _userListFromJson(List<dynamic> json) {
   return json
       .map((item) => User.fromJson(item as Map<String, dynamic>))
+      .toList();
+}
+
+// Helper functions for JSON serialization of Team lists
+List<Map<String, dynamic>> _teamListToJson(List<Team> teams) {
+  return teams.map((team) => team.toJson()).toList();
+}
+
+List<Team> _teamListFromJson(List<dynamic> json) {
+  return json
+      .map((item) => Team.fromJson(item as Map<String, dynamic>))
       .toList();
 }

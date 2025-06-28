@@ -25,6 +25,7 @@ mixin _$Game {
   String get joinCode => throw _privateConstructorUsedError;
   @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
   List<User> get players => throw _privateConstructorUsedError;
+  @JsonKey(toJson: _teamListToJson, fromJson: _teamListFromJson)
   List<Team> get teams => throw _privateConstructorUsedError;
   GameStatus get status => throw _privateConstructorUsedError;
   GamePhase get phase => throw _privateConstructorUsedError;
@@ -67,6 +68,7 @@ abstract class $GameCopyWith<$Res> {
     String joinCode,
     @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     List<User> players,
+    @JsonKey(toJson: _teamListToJson, fromJson: _teamListFromJson)
     List<Team> teams,
     GameStatus status,
     GamePhase phase,
@@ -281,6 +283,7 @@ abstract class _$$GameImplCopyWith<$Res> implements $GameCopyWith<$Res> {
     String joinCode,
     @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     List<User> players,
+    @JsonKey(toJson: _teamListToJson, fromJson: _teamListFromJson)
     List<Team> teams,
     GameStatus status,
     GamePhase phase,
@@ -473,6 +476,7 @@ class _$GameImpl implements _Game {
     required this.joinCode,
     @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     required final List<User> players,
+    @JsonKey(toJson: _teamListToJson, fromJson: _teamListFromJson)
     required final List<Team> teams,
     this.status = GameStatus.waiting,
     this.phase = GamePhase.teamSelection,
@@ -518,6 +522,7 @@ class _$GameImpl implements _Game {
 
   final List<Team> _teams;
   @override
+  @JsonKey(toJson: _teamListToJson, fromJson: _teamListFromJson)
   List<Team> get teams {
     if (_teams is EqualUnmodifiableListView) return _teams;
     // ignore: implicit_dynamic_type
@@ -706,6 +711,7 @@ abstract class _Game implements Game {
     required final String joinCode,
     @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
     required final List<User> players,
+    @JsonKey(toJson: _teamListToJson, fromJson: _teamListFromJson)
     required final List<Team> teams,
     final GameStatus status,
     final GamePhase phase,
@@ -738,6 +744,7 @@ abstract class _Game implements Game {
   @JsonKey(toJson: _userListToJson, fromJson: _userListFromJson)
   List<User> get players;
   @override
+  @JsonKey(toJson: _teamListToJson, fromJson: _teamListFromJson)
   List<Team> get teams;
   @override
   GameStatus get status;

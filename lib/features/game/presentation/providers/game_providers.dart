@@ -87,11 +87,17 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
   /// Assigns players to teams and starts the game
   Future<void> startGame(String gameId) async {
     final game = state.value;
-    if (game == null) return;
+    if (game == null) {
+      print('Error: No game found in state');
+      return;
+    }
 
     try {
+      print('Starting game with ${game.players.length} players');
+
       // Assign teams using GameLogicService
       final teams = GameLogicService.assignTeamsToPlayers(game.players);
+      print('Teams assigned: ${teams.length} teams');
 
       // Update game with teams and change status
       final updatedGame = game.copyWith(
@@ -100,9 +106,13 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
         phase: GamePhase.clueGiverSelection,
         startedAt: DateTime.now(),
       );
+      print('Game updated, status: ${updatedGame.status}');
 
       await repository.updateGame(gameId, updatedGame);
+      print('Game saved to repository');
     } catch (e, st) {
+      print('Error in startGame: $e');
+      print('Stack trace: $st');
       state = AsyncValue.error(e, st);
     }
   }

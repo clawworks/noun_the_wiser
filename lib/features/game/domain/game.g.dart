@@ -10,10 +10,7 @@ _$GameImpl _$$GameImplFromJson(Map<String, dynamic> json) => _$GameImpl(
   id: json['id'] as String,
   joinCode: json['joinCode'] as String,
   players: _userListFromJson(json['players'] as List),
-  teams:
-      (json['teams'] as List<dynamic>)
-          .map((e) => Team.fromJson(e as Map<String, dynamic>))
-          .toList(),
+  teams: _teamListFromJson(json['teams'] as List),
   status:
       $enumDecodeNullable(_$GameStatusEnumMap, json['status']) ??
       GameStatus.waiting,
@@ -80,7 +77,7 @@ Map<String, dynamic> _$$GameImplToJson(_$GameImpl instance) =>
       'id': instance.id,
       'joinCode': instance.joinCode,
       'players': _userListToJson(instance.players),
-      'teams': instance.teams,
+      'teams': _teamListToJson(instance.teams),
       'status': _$GameStatusEnumMap[instance.status]!,
       'phase': _$GamePhaseEnumMap[instance.phase]!,
       'currentRound': instance.currentRound,
