@@ -113,6 +113,19 @@ class FirebaseGameRepository implements GameRepository {
   }
 
   @override
+  Future<void> updateGame(String gameId, Game game) async {
+    try {
+      final gameData = game.toJson();
+      await _firestore
+          .collection('games')
+          .doc(gameId)
+          .set(gameData, SetOptions(merge: true));
+    } catch (e) {
+      throw GameFailure('Failed to update game: $e');
+    }
+  }
+
+  @override
   Stream<Game> watchGame(String gameId) {
     return _firestore.collection('games').doc(gameId).snapshots().map((doc) {
       if (!doc.exists) {

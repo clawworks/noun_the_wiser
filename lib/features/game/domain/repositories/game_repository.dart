@@ -8,6 +8,7 @@ abstract class GameRepository {
   Future<Game> joinGame(String joinCode, User user);
   Future<void> leaveGame(String gameId, String userId);
   Future<void> updateGameStatus(String gameId, GameStatus status);
+  Future<void> updateGame(String gameId, Game game);
   Stream<Game> watchGame(String gameId);
   Future<List<Game>> getUserGames(String userId);
   Future<void> deleteGame(String gameId);

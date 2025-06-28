@@ -32,6 +32,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented game state management (waiting, in-progress, finished)
   - Added team management and player tracking
 
+- **Game Logic & Core Gameplay**
+  - Implemented comprehensive GameLogicService with game mechanics
+  - Added team assignment and clue giver selection
+  - Built noun and question selection system with categories (Person/Place/Thing)
+  - Created turn management and guessing system
+  - Implemented badge awarding and win condition checking
+  - Added clue validation to enforce game rules
+  - Built real-time game phase transitions
+  - Created GameTurn tracking for game history
+
+- **Enhanced Team Management**
+  - Added team color customization (Green #57CC02, Blue #1CB0F6)
+  - Implemented player team switching functionality
+  - Added manual clue giver assignment for offline players
+  - Built team score and badge tracking system
+
 - **User Interface & Experience**
   - Built responsive home page with game creation and joining options
   - Created clean, modern UI following Material Design principles
@@ -91,29 +107,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Game creation and joining working
 - ✅ Real-time lobby with player management
 - ✅ Cross-platform compatibility established
-- 🔄 Game logic and gameplay mechanics (in progress)
-- 🔄 Team formation and game flow (planned)
-- 🔄 Noun guessing and scoring system (planned)
+- ✅ Game logic and core gameplay mechanics implemented
+- ✅ Team management and assignment system working
+- ✅ Turn management and guessing system ready
+- 🔄 Game UI for new phases (team assignment, clue giving, etc.)
+- 🔄 Game log and team chat functionality (planned)
+- 🔄 Online status tracking (planned)
 
 ### Next Milestones
-1. **Game Logic Implementation**
-   - Team formation and assignment
-   - Turn-based gameplay mechanics
-   - Noun generation and categorization
-   - Clue giving and guessing system
+1. **Game UI Implementation**
+   - Team assignment screen
+   - Clue giver selection interface
+   - Noun category selection
+   - Question and clue input screens
+   - Guessing interface
+   - Game log display
 
-2. **Scoring and Progress Tracking**
-   - Point calculation and team scoring
-   - Game progress tracking
-   - Round management and transitions
-
-3. **Enhanced User Experience**
-   - Game instructions and tutorials
+2. **Enhanced Features**
+   - Team chat functionality
+   - Online status tracking
+   - Game log implementation
    - Sound effects and animations
-   - Accessibility improvements
-   - Performance optimizations
 
-4. **Production Readiness**
+3. **Production Readiness**
    - App store preparation
    - Testing and bug fixes
    - Performance monitoring
