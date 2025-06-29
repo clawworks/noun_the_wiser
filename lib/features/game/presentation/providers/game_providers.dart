@@ -117,31 +117,44 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
     }
   }
 
-  /// Assigns clue givers for each team
+  /// Assigns clue givers to teams and starts the game
   Future<void> assignClueGivers(String gameId) async {
     final game = state.value;
     if (game == null) return;
 
     try {
-      final clueGivers = GameLogicService.selectClueGivers(game.teams);
+      print('GameNotifier: Starting clue giver assignment');
+      print('GameNotifier: Current teams: ${game.teams.length}');
 
-      // Update teams with clue givers
+      final clueGivers = GameLogicService.selectClueGivers(game.teams);
+      print('GameNotifier: Selected clue givers: $clueGivers');
+
       final updatedTeams =
           game.teams.map((team) {
             final clueGiverId = clueGivers[team.id];
-            return clueGiverId != null
-                ? team.copyWith(clueGiverId: clueGiverId)
-                : team;
+            if (clueGiverId != null) {
+              print(
+                'GameNotifier: Team ${team.name} gets clue giver: $clueGiverId',
+              );
+              return team.copyWith(clueGiverId: clueGiverId);
+            }
+            return team;
           }).toList();
 
       final updatedGame = game.copyWith(
         teams: updatedTeams,
-        phase: GamePhase.clueGiverSelection,
         status: GameStatus.inProgress,
+        phase: GamePhase.nounSelection,
+        startedAt: DateTime.now(),
       );
 
+      print('GameNotifier: Updated game phase to: ${updatedGame.phase}');
+      print('GameNotifier: Saving updated game to repository');
+
       await repository.updateGame(gameId, updatedGame);
+      print('GameNotifier: Game updated successfully');
     } catch (e, st) {
+      print('GameNotifier: Error assigning clue givers: $e');
       state = AsyncValue.error(e, st);
     }
   }
@@ -166,29 +179,44 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
           }).toList();
 
       final updatedGame = game.copyWith(teams: updatedTeams);
+
       await repository.updateGame(gameId, updatedGame);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
-  /// Selects a noun category and starts a new round
-  Future<void> selectNounCategory(String gameId, NounCategory category) async {
+  /// Selects a noun and moves to question selection phase
+  Future<void> selectNoun(String gameId, String noun) async {
     final game = state.value;
     if (game == null) return;
 
     try {
-      final noun = GameLogicService.getRandomNoun(category);
-      final question = GameLogicService.getRandomQuestion();
-      final nextTeamId = GameLogicService.getNextTeamId(game);
+      // Determine the category from the noun
+      final category = GameLogicService.getCategoryForNoun(noun);
 
       final updatedGame = game.copyWith(
-        currentCategory: category,
         currentNoun: noun,
-        currentQuestion: question,
-        currentTeamId: nextTeamId,
+        currentCategory: category,
         phase: GamePhase.questionSelection,
-        currentRound: game.currentRound + 1,
+      );
+
+      await repository.updateGame(gameId, updatedGame);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Selects a question and moves to clue giving phase
+  Future<void> selectQuestion(String gameId, String question) async {
+    final game = state.value;
+    if (game == null) return;
+
+    try {
+      final updatedGame = game.copyWith(
+        currentQuestion: question,
+        phase: GamePhase.clueGiving,
+        turnStartTime: DateTime.now(),
       );
 
       await repository.updateGame(gameId, updatedGame);
@@ -200,22 +228,12 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
   /// Submits a clue from the clue giver
   Future<void> submitClue(String gameId, String clue) async {
     final game = state.value;
-    if (game == null || game.currentNoun == null) return;
+    if (game == null) return;
 
     try {
-      // Validate the clue
-      if (!GameLogicService.isValidClue(
-        clue,
-        game.currentNoun!,
-        game.currentQuestion ?? '',
-      )) {
-        throw GameFailure('Invalid clue: Cannot use parts of the noun name');
-      }
-
       final updatedGame = game.copyWith(
         currentClue: clue,
         phase: GamePhase.guessing,
-        turnStartTime: DateTime.now(),
       );
 
       await repository.updateGame(gameId, updatedGame);
@@ -224,7 +242,7 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
     }
   }
 
-  /// Submits a guess from a team
+  /// Submits a guess from a team member
   Future<void> submitGuess(String gameId, String guess) async {
     final game = state.value;
     if (game == null || game.currentNoun == null) return;

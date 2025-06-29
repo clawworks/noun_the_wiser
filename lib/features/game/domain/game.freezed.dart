@@ -41,12 +41,17 @@ mixin _$Game {
       throw _privateConstructorUsedError;
   Map<String, List<NounCategory>> get teamBadges =>
       throw _privateConstructorUsedError;
+  @JsonKey(toJson: _gameTurnListToJson, fromJson: _gameTurnListFromJson)
   List<GameTurn> get turnHistory => throw _privateConstructorUsedError;
   GameTurn? get currentTurn => throw _privateConstructorUsedError;
   int get turnTimeLimit => throw _privateConstructorUsedError; // seconds
+  @DateTimeJsonConverter()
   DateTime? get turnStartTime => throw _privateConstructorUsedError;
+  @DateTimeJsonConverter()
   DateTime get createdAt => throw _privateConstructorUsedError;
+  @DateTimeJsonConverter()
   DateTime? get startedAt => throw _privateConstructorUsedError;
+  @DateTimeJsonConverter()
   DateTime? get endedAt => throw _privateConstructorUsedError;
 
   /// Serializes this Game to a JSON map.
@@ -82,13 +87,14 @@ abstract class $GameCopyWith<$Res> {
     List<String> guessedNouns,
     Map<String, List<String>> teamScores,
     Map<String, List<NounCategory>> teamBadges,
+    @JsonKey(toJson: _gameTurnListToJson, fromJson: _gameTurnListFromJson)
     List<GameTurn> turnHistory,
     GameTurn? currentTurn,
     int turnTimeLimit,
-    DateTime? turnStartTime,
-    DateTime createdAt,
-    DateTime? startedAt,
-    DateTime? endedAt,
+    @DateTimeJsonConverter() DateTime? turnStartTime,
+    @DateTimeJsonConverter() DateTime createdAt,
+    @DateTimeJsonConverter() DateTime? startedAt,
+    @DateTimeJsonConverter() DateTime? endedAt,
   });
 
   $GameTurnCopyWith<$Res>? get currentTurn;
@@ -297,13 +303,14 @@ abstract class _$$GameImplCopyWith<$Res> implements $GameCopyWith<$Res> {
     List<String> guessedNouns,
     Map<String, List<String>> teamScores,
     Map<String, List<NounCategory>> teamBadges,
+    @JsonKey(toJson: _gameTurnListToJson, fromJson: _gameTurnListFromJson)
     List<GameTurn> turnHistory,
     GameTurn? currentTurn,
     int turnTimeLimit,
-    DateTime? turnStartTime,
-    DateTime createdAt,
-    DateTime? startedAt,
-    DateTime? endedAt,
+    @DateTimeJsonConverter() DateTime? turnStartTime,
+    @DateTimeJsonConverter() DateTime createdAt,
+    @DateTimeJsonConverter() DateTime? startedAt,
+    @DateTimeJsonConverter() DateTime? endedAt,
   });
 
   @override
@@ -490,13 +497,14 @@ class _$GameImpl implements _Game {
     final List<String> guessedNouns = const [],
     final Map<String, List<String>> teamScores = const {},
     final Map<String, List<NounCategory>> teamBadges = const {},
+    @JsonKey(toJson: _gameTurnListToJson, fromJson: _gameTurnListFromJson)
     final List<GameTurn> turnHistory = const [],
     this.currentTurn,
     this.turnTimeLimit = 60,
-    this.turnStartTime,
-    required this.createdAt,
-    this.startedAt,
-    this.endedAt,
+    @DateTimeJsonConverter() this.turnStartTime,
+    @DateTimeJsonConverter() required this.createdAt,
+    @DateTimeJsonConverter() this.startedAt,
+    @DateTimeJsonConverter() this.endedAt,
   }) : _players = players,
        _teams = teams,
        _guessedNouns = guessedNouns,
@@ -580,7 +588,7 @@ class _$GameImpl implements _Game {
 
   final List<GameTurn> _turnHistory;
   @override
-  @JsonKey()
+  @JsonKey(toJson: _gameTurnListToJson, fromJson: _gameTurnListFromJson)
   List<GameTurn> get turnHistory {
     if (_turnHistory is EqualUnmodifiableListView) return _turnHistory;
     // ignore: implicit_dynamic_type
@@ -594,12 +602,16 @@ class _$GameImpl implements _Game {
   final int turnTimeLimit;
   // seconds
   @override
+  @DateTimeJsonConverter()
   final DateTime? turnStartTime;
   @override
+  @DateTimeJsonConverter()
   final DateTime createdAt;
   @override
+  @DateTimeJsonConverter()
   final DateTime? startedAt;
   @override
+  @DateTimeJsonConverter()
   final DateTime? endedAt;
 
   @override
@@ -725,13 +737,14 @@ abstract class _Game implements Game {
     final List<String> guessedNouns,
     final Map<String, List<String>> teamScores,
     final Map<String, List<NounCategory>> teamBadges,
+    @JsonKey(toJson: _gameTurnListToJson, fromJson: _gameTurnListFromJson)
     final List<GameTurn> turnHistory,
     final GameTurn? currentTurn,
     final int turnTimeLimit,
-    final DateTime? turnStartTime,
-    required final DateTime createdAt,
-    final DateTime? startedAt,
-    final DateTime? endedAt,
+    @DateTimeJsonConverter() final DateTime? turnStartTime,
+    @DateTimeJsonConverter() required final DateTime createdAt,
+    @DateTimeJsonConverter() final DateTime? startedAt,
+    @DateTimeJsonConverter() final DateTime? endedAt,
   }) = _$GameImpl;
 
   factory _Game.fromJson(Map<String, dynamic> json) = _$GameImpl.fromJson;
@@ -771,18 +784,23 @@ abstract class _Game implements Game {
   @override
   Map<String, List<NounCategory>> get teamBadges;
   @override
+  @JsonKey(toJson: _gameTurnListToJson, fromJson: _gameTurnListFromJson)
   List<GameTurn> get turnHistory;
   @override
   GameTurn? get currentTurn;
   @override
   int get turnTimeLimit; // seconds
   @override
+  @DateTimeJsonConverter()
   DateTime? get turnStartTime;
   @override
+  @DateTimeJsonConverter()
   DateTime get createdAt;
   @override
+  @DateTimeJsonConverter()
   DateTime? get startedAt;
   @override
+  @DateTimeJsonConverter()
   DateTime? get endedAt;
 
   /// Create a copy of Game
@@ -1163,7 +1181,9 @@ mixin _$GameTurn {
   String? get clue => throw _privateConstructorUsedError;
   String? get guess => throw _privateConstructorUsedError;
   bool? get isCorrect => throw _privateConstructorUsedError;
+  @DateTimeJsonConverter()
   DateTime get startTime => throw _privateConstructorUsedError;
+  @DateTimeJsonConverter()
   DateTime? get endTime => throw _privateConstructorUsedError;
   int get timeLimit => throw _privateConstructorUsedError;
 
@@ -1192,8 +1212,8 @@ abstract class $GameTurnCopyWith<$Res> {
     String? clue,
     String? guess,
     bool? isCorrect,
-    DateTime startTime,
-    DateTime? endTime,
+    @DateTimeJsonConverter() DateTime startTime,
+    @DateTimeJsonConverter() DateTime? endTime,
     int timeLimit,
   });
 }
@@ -1313,8 +1333,8 @@ abstract class _$$GameTurnImplCopyWith<$Res>
     String? clue,
     String? guess,
     bool? isCorrect,
-    DateTime startTime,
-    DateTime? endTime,
+    @DateTimeJsonConverter() DateTime startTime,
+    @DateTimeJsonConverter() DateTime? endTime,
     int timeLimit,
   });
 }
@@ -1426,8 +1446,8 @@ class _$GameTurnImpl implements _GameTurn {
     this.clue,
     this.guess,
     this.isCorrect,
-    required this.startTime,
-    this.endTime,
+    @DateTimeJsonConverter() required this.startTime,
+    @DateTimeJsonConverter() this.endTime,
     this.timeLimit = 60,
   });
 
@@ -1453,8 +1473,10 @@ class _$GameTurnImpl implements _GameTurn {
   @override
   final bool? isCorrect;
   @override
+  @DateTimeJsonConverter()
   final DateTime startTime;
   @override
+  @DateTimeJsonConverter()
   final DateTime? endTime;
   @override
   @JsonKey()
@@ -1533,8 +1555,8 @@ abstract class _GameTurn implements GameTurn {
     final String? clue,
     final String? guess,
     final bool? isCorrect,
-    required final DateTime startTime,
-    final DateTime? endTime,
+    @DateTimeJsonConverter() required final DateTime startTime,
+    @DateTimeJsonConverter() final DateTime? endTime,
     final int timeLimit,
   }) = _$GameTurnImpl;
 
@@ -1560,8 +1582,10 @@ abstract class _GameTurn implements GameTurn {
   @override
   bool? get isCorrect;
   @override
+  @DateTimeJsonConverter()
   DateTime get startTime;
   @override
+  @DateTimeJsonConverter()
   DateTime? get endTime;
   @override
   int get timeLimit;

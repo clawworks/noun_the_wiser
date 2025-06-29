@@ -48,28 +48,29 @@ _$GameImpl _$$GameImplFromJson(Map<String, dynamic> json) => _$GameImpl(
       ) ??
       const {},
   turnHistory:
-      (json['turnHistory'] as List<dynamic>?)
-          ?.map((e) => GameTurn.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const [],
+      json['turnHistory'] == null
+          ? const []
+          : _gameTurnListFromJson(json['turnHistory'] as List),
   currentTurn:
       json['currentTurn'] == null
           ? null
           : GameTurn.fromJson(json['currentTurn'] as Map<String, dynamic>),
   turnTimeLimit: (json['turnTimeLimit'] as num?)?.toInt() ?? 60,
-  turnStartTime:
-      json['turnStartTime'] == null
-          ? null
-          : DateTime.parse(json['turnStartTime'] as String),
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  startedAt:
-      json['startedAt'] == null
-          ? null
-          : DateTime.parse(json['startedAt'] as String),
-  endedAt:
-      json['endedAt'] == null
-          ? null
-          : DateTime.parse(json['endedAt'] as String),
+  turnStartTime: _$JsonConverterFromJson<String, DateTime>(
+    json['turnStartTime'],
+    const DateTimeJsonConverter().fromJson,
+  ),
+  createdAt: const DateTimeJsonConverter().fromJson(
+    json['createdAt'] as String,
+  ),
+  startedAt: _$JsonConverterFromJson<String, DateTime>(
+    json['startedAt'],
+    const DateTimeJsonConverter().fromJson,
+  ),
+  endedAt: _$JsonConverterFromJson<String, DateTime>(
+    json['endedAt'],
+    const DateTimeJsonConverter().fromJson,
+  ),
 );
 
 Map<String, dynamic> _$$GameImplToJson(_$GameImpl instance) =>
@@ -92,13 +93,22 @@ Map<String, dynamic> _$$GameImplToJson(_$GameImpl instance) =>
       'teamBadges': instance.teamBadges.map(
         (k, e) => MapEntry(k, e.map((e) => _$NounCategoryEnumMap[e]!).toList()),
       ),
-      'turnHistory': instance.turnHistory,
+      'turnHistory': _gameTurnListToJson(instance.turnHistory),
       'currentTurn': instance.currentTurn,
       'turnTimeLimit': instance.turnTimeLimit,
-      'turnStartTime': instance.turnStartTime?.toIso8601String(),
-      'createdAt': instance.createdAt.toIso8601String(),
-      'startedAt': instance.startedAt?.toIso8601String(),
-      'endedAt': instance.endedAt?.toIso8601String(),
+      'turnStartTime': _$JsonConverterToJson<String, DateTime>(
+        instance.turnStartTime,
+        const DateTimeJsonConverter().toJson,
+      ),
+      'createdAt': const DateTimeJsonConverter().toJson(instance.createdAt),
+      'startedAt': _$JsonConverterToJson<String, DateTime>(
+        instance.startedAt,
+        const DateTimeJsonConverter().toJson,
+      ),
+      'endedAt': _$JsonConverterToJson<String, DateTime>(
+        instance.endedAt,
+        const DateTimeJsonConverter().toJson,
+      ),
     };
 
 const _$GameStatusEnumMap = {
@@ -124,6 +134,16 @@ const _$NounCategoryEnumMap = {
   NounCategory.place: 'place',
   NounCategory.thing: 'thing',
 };
+
+Value? _$JsonConverterFromJson<Json, Value>(
+  Object? json,
+  Value? Function(Json json) fromJson,
+) => json == null ? null : fromJson(json as Json);
+
+Json? _$JsonConverterToJson<Json, Value>(
+  Value? value,
+  Json? Function(Value value) toJson,
+) => value == null ? null : toJson(value);
 
 _$TeamImpl _$$TeamImplFromJson(Map<String, dynamic> json) => _$TeamImpl(
   id: json['id'] as String,
@@ -168,11 +188,13 @@ _$GameTurnImpl _$$GameTurnImplFromJson(Map<String, dynamic> json) =>
       clue: json['clue'] as String?,
       guess: json['guess'] as String?,
       isCorrect: json['isCorrect'] as bool?,
-      startTime: DateTime.parse(json['startTime'] as String),
-      endTime:
-          json['endTime'] == null
-              ? null
-              : DateTime.parse(json['endTime'] as String),
+      startTime: const DateTimeJsonConverter().fromJson(
+        json['startTime'] as String,
+      ),
+      endTime: _$JsonConverterFromJson<String, DateTime>(
+        json['endTime'],
+        const DateTimeJsonConverter().fromJson,
+      ),
       timeLimit: (json['timeLimit'] as num?)?.toInt() ?? 60,
     );
 
@@ -187,8 +209,11 @@ Map<String, dynamic> _$$GameTurnImplToJson(_$GameTurnImpl instance) =>
       'clue': instance.clue,
       'guess': instance.guess,
       'isCorrect': instance.isCorrect,
-      'startTime': instance.startTime.toIso8601String(),
-      'endTime': instance.endTime?.toIso8601String(),
+      'startTime': const DateTimeJsonConverter().toJson(instance.startTime),
+      'endTime': _$JsonConverterToJson<String, DateTime>(
+        instance.endTime,
+        const DateTimeJsonConverter().toJson,
+      ),
       'timeLimit': instance.timeLimit,
     };
 

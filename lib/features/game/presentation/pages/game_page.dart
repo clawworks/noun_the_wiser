@@ -6,6 +6,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/game.dart';
 import '../../../auth/domain/user.dart';
 import '../../../../core/constants/theme_constants.dart';
+import '../../domain/services/game_logic_service.dart';
 
 class GamePage extends ConsumerStatefulWidget {
   final String gameId;
@@ -32,21 +33,28 @@ class _GamePageState extends ConsumerState<GamePage> {
     final currentUserAsync = ref.watch(authNotifierProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: gameAsync.when(
-          data: (game) {
-            if (game == null) {
-              return const Center(child: Text('Game not found'));
-            }
-
-            return currentUserAsync.when(
-              data: (currentUser) => _buildGameContent(game, currentUser),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(child: Text('Error: $error')),
-            );
+        child: GestureDetector(
+          onTap: () {
+            // Dismiss keyboard when tapping outside text fields
+            FocusScope.of(context).unfocus();
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(child: Text('Error: $error')),
+          child: gameAsync.when(
+            data: (game) {
+              if (game == null) {
+                return const Center(child: Text('Game not found'));
+              }
+
+              return currentUserAsync.when(
+                data: (currentUser) => _buildGameContent(game, currentUser),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(child: Text('Error: $error')),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(child: Text('Error: $error')),
+          ),
         ),
       ),
     );
@@ -405,7 +413,7 @@ class _GamePageState extends ConsumerState<GamePage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => _continueToGame(game),
+                onPressed: () => _continueToGame(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -1110,12 +1118,10 @@ class _GamePageState extends ConsumerState<GamePage> {
     }
   }
 
-  Future<void> _continueToGame(Game game) async {
+  void _continueToGame() async {
     try {
-      // Move to noun selection phase
-      await ref
-          .read(gameNotifierProvider.notifier)
-          .selectNounCategory(widget.gameId, NounCategory.person);
+      // The game will automatically move to the next phase based on the logic
+      // This method is mainly for user interaction
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1239,15 +1245,20 @@ class _GamePageState extends ConsumerState<GamePage> {
         .selectClueGiver(widget.gameId, teamId, playerId);
   }
 
-  void _selectNounCategory(NounCategory category) {
-    ref
-        .read(gameNotifierProvider.notifier)
-        .selectNounCategory(widget.gameId, category);
+  void _selectNoun(String noun) {
+    ref.read(gameNotifierProvider.notifier).selectNoun(widget.gameId, noun);
   }
 
   Widget _buildNounSelectionContent(Game game, User? currentUser) {
-    final isHost =
-        game.players.isNotEmpty && game.players.first.id == currentUser?.id;
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
+    final isCurrentUserClueGiver = currentTeam.clueGiverId == currentUser?.id;
+    final currentClueGiver = game.players.firstWhere(
+      (player) => player.id == currentTeam.clueGiverId,
+      orElse: () => game.players.first,
+    );
 
     return Column(
       children: [
@@ -1257,7 +1268,7 @@ class _GamePageState extends ConsumerState<GamePage> {
           child: Column(
             children: [
               Text(
-                'Select Noun Category',
+                'Noun Selection',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.primary,
@@ -1266,7 +1277,7 @@ class _GamePageState extends ConsumerState<GamePage> {
               ),
               const SizedBox(height: ThemeConstants.spacingMd),
               Text(
-                'Choose a category for the next round. Each category has different types of nouns to guess.',
+                '${currentClueGiver.name} is selecting a noun for ${currentTeam.name}',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(
                     context,
@@ -1274,65 +1285,65 @@ class _GamePageState extends ConsumerState<GamePage> {
                 ),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: ThemeConstants.spacingSm),
+              Text(
+                'Choose a noun from any category:',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: currentTeam.color,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
 
-        // Category Selection
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(ThemeConstants.spacingLg),
-            child: Column(
-              children: [
-                _buildCategoryCard(
-                  NounCategory.person,
-                  'Person',
-                  'Famous people, characters, and personalities',
-                  Icons.person,
-                  game,
-                  currentUser,
-                ),
-                const SizedBox(height: ThemeConstants.spacingMd),
-                _buildCategoryCard(
-                  NounCategory.place,
-                  'Place',
-                  'Cities, landmarks, and locations',
-                  Icons.location_on,
-                  game,
-                  currentUser,
-                ),
-                const SizedBox(height: ThemeConstants.spacingMd),
-                _buildCategoryCard(
-                  NounCategory.thing,
-                  'Thing',
-                  'Objects, items, and concepts',
-                  Icons.category,
-                  game,
-                  currentUser,
-                ),
-              ],
+        // Noun Selection
+        if (isCurrentUserClueGiver) ...[
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select a noun for your team to guess:',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+                  Expanded(child: _buildAllNounsList(game, currentUser)),
+                ],
+              ),
             ),
           ),
-        ),
-
-        // Instructions for non-host players
-        if (!isHost) ...[
-          Container(
-            padding: const EdgeInsets.all(ThemeConstants.spacingLg),
-            child: Container(
-              padding: const EdgeInsets.all(ThemeConstants.spacingLg),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
-              ),
-              child: Row(
+        ] else ...[
+          // Waiting for clue giver
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(width: ThemeConstants.spacingMd),
+                  Icon(Icons.category, size: 64, color: currentTeam.color),
+                  const SizedBox(height: ThemeConstants.spacingLg),
                   Text(
-                    'Waiting for host to select a category...',
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    'Waiting for ${currentClueGiver.name}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+                  Text(
+                    'to select a noun...',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+                  const CircularProgressIndicator(),
                 ],
               ),
             ),
@@ -1342,30 +1353,95 @@ class _GamePageState extends ConsumerState<GamePage> {
     );
   }
 
-  Widget _buildCategoryCard(
-    NounCategory category,
-    String title,
-    String description,
+  Widget _buildAllNounsList(Game game, User? currentUser) {
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
+
+    return ListView(
+      children: [
+        // Person Category
+        _buildCategorySection(
+          'Person',
+          Icons.person,
+          Colors.blue,
+          GameLogicService.getNounsForCategory(NounCategory.person),
+          game,
+          currentUser,
+        ),
+        const SizedBox(height: ThemeConstants.spacingLg),
+
+        // Place Category
+        _buildCategorySection(
+          'Place',
+          Icons.location_on,
+          Colors.green,
+          GameLogicService.getNounsForCategory(NounCategory.place),
+          game,
+          currentUser,
+        ),
+        const SizedBox(height: ThemeConstants.spacingLg),
+
+        // Thing Category
+        _buildCategorySection(
+          'Thing',
+          Icons.category,
+          Colors.orange,
+          GameLogicService.getNounsForCategory(NounCategory.thing),
+          game,
+          currentUser,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategorySection(
+    String categoryName,
     IconData icon,
+    Color color,
+    List<String> nouns,
     Game game,
     User? currentUser,
   ) {
-    final isHost =
-        game.players.isNotEmpty && game.players.first.id == currentUser?.id;
-    final isSelected = game.currentCategory == category;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: ThemeConstants.spacingSm),
+            Text(
+              categoryName,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: ThemeConstants.spacingMd),
+        ...nouns.map((noun) => _buildNounCard(noun, game, currentUser)),
+      ],
+    );
+  }
+
+  Widget _buildNounCard(String noun, Game game, User? currentUser) {
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
 
     return Card(
+      margin: const EdgeInsets.only(bottom: ThemeConstants.spacingSm),
       child: InkWell(
-        onTap: isHost ? () => _selectNounCategory(category) : null,
+        onTap: () => _selectNoun(noun),
         borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(
-              color:
-                  isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.transparent,
-              width: 2,
+              color: currentTeam.color.withValues(alpha: 0.3),
+              width: 1,
             ),
             borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
           ),
@@ -1376,24 +1452,549 @@ class _GamePageState extends ConsumerState<GamePage> {
                 Container(
                   padding: const EdgeInsets.all(ThemeConstants.spacingMd),
                   decoration: BoxDecoration(
-                    color:
-                        isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                    color: currentTeam.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(
                       ThemeConstants.radiusMd,
                     ),
                   ),
                   child: Icon(
-                    icon,
-                    color:
-                        isSelected
-                            ? Theme.of(context).colorScheme.onPrimary
-                            : Theme.of(context).colorScheme.onSurface,
+                    Icons.category,
+                    color: currentTeam.color,
                     size: 24,
                   ),
+                ),
+                const SizedBox(width: ThemeConstants.spacingMd),
+                Expanded(
+                  child: Text(
+                    noun,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: currentTeam.color,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameEndContent(Game game, User? currentUser) {
+    final winningTeam = GameLogicService.getWinningTeam(game.teams);
+    final isHost = game.players.first.id == currentUser?.id;
+
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+          child: Column(
+            children: [
+              Text(
+                'Game Over!',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingMd),
+              if (winningTeam != null) ...[
+                Text(
+                  '${winningTeam.name} Wins!',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: winningTeam.color,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: ThemeConstants.spacingSm),
+                Text(
+                  'Congratulations on collecting all three badges!',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ] else ...[
+                Text(
+                  'It\'s a tie!',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // Final Results
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+            child: Column(
+              children: [
+                // Final Scores
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.radiusLg,
+                    ),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Final Results',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingMd),
+                      ...game.teams.map((team) {
+                        final isWinner = winningTeam?.id == team.id;
+                        return Container(
+                          margin: const EdgeInsets.only(
+                            bottom: ThemeConstants.spacingMd,
+                          ),
+                          padding: const EdgeInsets.all(
+                            ThemeConstants.spacingMd,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                isWinner
+                                    ? team.color.withValues(alpha: 0.1)
+                                    : Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(
+                              ThemeConstants.radiusMd,
+                            ),
+                            border: Border.all(
+                              color: isWinner ? team.color : Colors.transparent,
+                              width: isWinner ? 2 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: team.color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: ThemeConstants.spacingSm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          team.name,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyLarge?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if (isWinner) ...[
+                                          const SizedBox(
+                                            width: ThemeConstants.spacingSm,
+                                          ),
+                                          Icon(
+                                            Icons.emoji_events,
+                                            size: 20,
+                                            color: team.color,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height: ThemeConstants.spacingXs,
+                                    ),
+                                    Text(
+                                      '${team.score} points • ${team.badges.length} badges',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: ThemeConstants.spacingLg),
+
+                // Game Statistics
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.radiusLg,
+                    ),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Game Statistics',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingMd),
+                      _buildStatRow('Total Rounds', '${game.currentRound}'),
+                      _buildStatRow(
+                        'Total Turns',
+                        '${game.turnHistory.length}',
+                      ),
+                      _buildStatRow(
+                        'Game Duration',
+                        _formatDuration(game.createdAt, game.endedAt),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Spacer(),
+
+                // Action Buttons
+                if (isHost) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () => _startNewGame(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            ThemeConstants.radiusMd,
+                          ),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Start New Game',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: OutlinedButton(
+                    onPressed: () => _returnToLobby(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          ThemeConstants.radiusMd,
+                        ),
+                      ),
+                    ),
+                    child: const Text(
+                      'Return to Lobby',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: ThemeConstants.spacingSm),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDuration(DateTime start, DateTime? end) {
+    if (end == null) return 'In Progress';
+    final duration = end.difference(start);
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '${minutes}m ${seconds}s';
+  }
+
+  void _startNewGame() {
+    // TODO: Implement new game creation
+    _returnToLobby();
+  }
+
+  void _returnToLobby() {
+    Navigator.of(context).pop();
+  }
+
+  Widget _buildQuestionSelectionContent(Game game, User? currentUser) {
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
+    final isCurrentUserClueGiver = currentTeam.clueGiverId == currentUser?.id;
+    final isCurrentUserInTeam = currentTeam.playerIds.contains(currentUser?.id);
+    final currentClueGiver = game.players.firstWhere(
+      (player) => player.id == currentTeam.clueGiverId,
+      orElse: () => game.players.first,
+    );
+
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+          child: Column(
+            children: [
+              Text(
+                'Question Selection',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingMd),
+              Text(
+                '${currentTeam.name} is selecting a question',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingSm),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ThemeConstants.spacingMd,
+                  vertical: ThemeConstants.spacingSm,
+                ),
+                decoration: BoxDecoration(
+                  color: currentTeam.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+                  border: Border.all(color: currentTeam.color),
+                ),
+                child: Text(
+                  'Noun: ${game.currentNoun}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: currentTeam.color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Question Selection
+        if (isCurrentUserInTeam && !isCurrentUserClueGiver) ...[
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Choose a question to help ${currentClueGiver.name} give clues:',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        _buildQuestionCard(
+                          'What is it?',
+                          'Describe what the noun is or does',
+                          Icons.question_mark,
+                          game,
+                          currentUser,
+                        ),
+                        const SizedBox(height: ThemeConstants.spacingMd),
+                        _buildQuestionCard(
+                          'Where is it?',
+                          'Describe where you would find this noun',
+                          Icons.location_on,
+                          game,
+                          currentUser,
+                        ),
+                        const SizedBox(height: ThemeConstants.spacingMd),
+                        _buildQuestionCard(
+                          'When is it?',
+                          'Describe when this noun is relevant or used',
+                          Icons.schedule,
+                          game,
+                          currentUser,
+                        ),
+                        const SizedBox(height: ThemeConstants.spacingMd),
+                        _buildQuestionCard(
+                          'Why is it?',
+                          'Describe why this noun is important or useful',
+                          Icons.psychology,
+                          game,
+                          currentUser,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ] else ...[
+          // Waiting for team or clue giver waiting
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.psychology, size: 64, color: currentTeam.color),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+                  Text(
+                    isCurrentUserClueGiver
+                        ? 'Your team is selecting a question...'
+                        : 'Waiting for ${currentTeam.name}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+                  Text(
+                    isCurrentUserClueGiver
+                        ? 'Wait for them to choose a question'
+                        : 'to select a question...',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+                  const CircularProgressIndicator(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildQuestionCard(
+    String question,
+    String description,
+    IconData icon,
+    Game game,
+    User? currentUser,
+  ) {
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
+    final isCurrentUserInTeam = currentTeam.playerIds.contains(currentUser?.id);
+    final isCurrentUserClueGiver = currentTeam.clueGiverId == currentUser?.id;
+
+    return Card(
+      child: InkWell(
+        onTap:
+            (isCurrentUserInTeam && !isCurrentUserClueGiver)
+                ? () => _selectQuestion(question)
+                : null,
+        borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: currentTeam.color.withValues(alpha: 0.3),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(ThemeConstants.spacingMd),
+                  decoration: BoxDecoration(
+                    color: currentTeam.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.radiusMd,
+                    ),
+                  ),
+                  child: Icon(icon, color: currentTeam.color, size: 24),
                 ),
                 const SizedBox(width: ThemeConstants.spacingMd),
                 Expanded(
@@ -1401,13 +2002,9 @@ class _GamePageState extends ConsumerState<GamePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        question,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color:
-                              isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : null,
                         ),
                       ),
                       const SizedBox(height: ThemeConstants.spacingXs),
@@ -1422,11 +2019,11 @@ class _GamePageState extends ConsumerState<GamePage> {
                     ],
                   ),
                 ),
-                if (isSelected)
+                if (isCurrentUserInTeam && !isCurrentUserClueGiver)
                   Icon(
-                    Icons.check_circle,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 24,
+                    Icons.arrow_forward_ios,
+                    color: currentTeam.color,
+                    size: 16,
                   ),
               ],
             ),
@@ -1436,23 +2033,666 @@ class _GamePageState extends ConsumerState<GamePage> {
     );
   }
 
-  Widget _buildQuestionSelectionContent(Game game, User? currentUser) {
-    return _buildGameInProgressContent(game, currentUser);
+  void _selectQuestion(String question) {
+    ref
+        .read(gameNotifierProvider.notifier)
+        .selectQuestion(widget.gameId, question);
   }
 
   Widget _buildClueGivingContent(Game game, User? currentUser) {
-    return _buildGameInProgressContent(game, currentUser);
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
+    final isCurrentUserClueGiver = currentTeam.clueGiverId == currentUser?.id;
+    final currentClueGiver = game.players.firstWhere(
+      (player) => player.id == currentTeam.clueGiverId,
+      orElse: () => game.players.first,
+    );
+
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+          child: Column(
+            children: [
+              Text(
+                'Clue Giving',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingMd),
+              Text(
+                '${currentClueGiver.name} is giving clues for ${currentTeam.name}',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingSm),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ThemeConstants.spacingMd,
+                  vertical: ThemeConstants.spacingSm,
+                ),
+                decoration: BoxDecoration(
+                  color: currentTeam.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+                  border: Border.all(color: currentTeam.color),
+                ),
+                child: Text(
+                  'Noun: ${game.currentNoun}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: currentTeam.color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Clue Input
+        if (isCurrentUserClueGiver) ...[
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Question: ${game.currentQuestion}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+                  Text(
+                    'Give a clue that answers this question. Be creative but don\'t use parts of the noun name!',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+                  Expanded(child: _buildClueInput(game, currentUser)),
+                ],
+              ),
+            ),
+          ),
+        ] else ...[
+          // Waiting for clue giver
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.edit_note, size: 64, color: currentTeam.color),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+                  Text(
+                    'Waiting for ${currentClueGiver.name}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+                  Text(
+                    'to give a clue...',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+                  const CircularProgressIndicator(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildClueInput(Game game, User? currentUser) {
+    final TextEditingController clueController = TextEditingController();
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: TextField(
+              controller: clueController,
+              maxLines: null,
+              minLines: 3,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                hintText: 'Enter your clue here...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+                  borderSide: BorderSide(color: currentTeam.color),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+                  borderSide: BorderSide(color: currentTeam.color, width: 2),
+                ),
+                filled: true,
+                fillColor: currentTeam.color.withValues(alpha: 0.05),
+              ),
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ),
+        const SizedBox(height: ThemeConstants.spacingLg),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: () {
+              final clue = clueController.text.trim();
+              if (clue.isNotEmpty) {
+                _submitClue(clue);
+                // Clear the text field after submission
+                clueController.clear();
+                // Dismiss keyboard
+                FocusScope.of(context).unfocus();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: currentTeam.color,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Submit Clue',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _submitClue(String clue) {
+    ref.read(gameNotifierProvider.notifier).submitClue(widget.gameId, clue);
   }
 
   Widget _buildGuessingContent(Game game, User? currentUser) {
-    return _buildGameInProgressContent(game, currentUser);
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
+    final isCurrentUserClueGiver = currentTeam.clueGiverId == currentUser?.id;
+    final currentClueGiver = game.players.firstWhere(
+      (player) => player.id == currentTeam.clueGiverId,
+      orElse: () => game.players.first,
+    );
+
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+          child: Column(
+            children: [
+              Text(
+                'Guessing Time!',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingMd),
+              Text(
+                '${currentTeam.name} is guessing',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingSm),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ThemeConstants.spacingMd,
+                  vertical: ThemeConstants.spacingSm,
+                ),
+                decoration: BoxDecoration(
+                  color: currentTeam.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+                  border: Border.all(color: currentTeam.color),
+                ),
+                child: Text(
+                  'Noun: ${game.currentNoun}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: currentTeam.color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Clue Display
+        Container(
+          margin: const EdgeInsets.symmetric(
+            horizontal: ThemeConstants.spacingLg,
+          ),
+          padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+          decoration: BoxDecoration(
+            color: currentTeam.color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+            border: Border.all(color: currentTeam.color.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Question: ${game.currentQuestion}',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingMd),
+              Text(
+                'Clue: ${game.currentClue}',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: currentTeam.color,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingSm),
+              Text(
+                'From: ${currentClueGiver.name}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+
+        // Guessing Interface
+        if (!isCurrentUserClueGiver) ...[
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'What do you think the noun is?',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+                  Text(
+                    'Type your guess below:',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+                  Expanded(child: _buildGuessInput(game, currentUser)),
+                ],
+              ),
+            ),
+          ),
+        ] else ...[
+          // Clue giver waiting
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.psychology, size: 64, color: currentTeam.color),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+                  Text(
+                    'Your team is guessing...',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+                  Text(
+                    'Wait for them to submit their guess',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+                  const CircularProgressIndicator(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildGuessInput(Game game, User? currentUser) {
+    final TextEditingController guessController = TextEditingController();
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: TextField(
+              controller: guessController,
+              maxLines: null,
+              minLines: 3,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                hintText: 'Enter your guess...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+                  borderSide: BorderSide(color: currentTeam.color),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+                  borderSide: BorderSide(color: currentTeam.color, width: 2),
+                ),
+                filled: true,
+                fillColor: currentTeam.color.withValues(alpha: 0.05),
+              ),
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ),
+        const SizedBox(height: ThemeConstants.spacingLg),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: () {
+              final guess = guessController.text.trim();
+              if (guess.isNotEmpty) {
+                _submitGuess(guess);
+                // Clear the text field after submission
+                guessController.clear();
+                // Dismiss keyboard
+                FocusScope.of(context).unfocus();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: currentTeam.color,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Submit Guess',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _submitGuess(String guess) {
+    ref.read(gameNotifierProvider.notifier).submitGuess(widget.gameId, guess);
   }
 
   Widget _buildRoundEndContent(Game game, User? currentUser) {
-    return _buildGameInProgressContent(game, currentUser);
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.id == game.currentTeamId,
+      orElse: () => game.teams.first,
+    );
+    final lastTurn = game.turnHistory.isNotEmpty ? game.turnHistory.last : null;
+    final isCorrect = lastTurn?.isCorrect ?? false;
+    final guess = lastTurn?.guess ?? '';
+    final noun = lastTurn?.noun ?? '';
+
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+          child: Column(
+            children: [
+              Text(
+                'Round ${game.currentRound} Results',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingMd),
+              Text(
+                currentTeam.name,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: currentTeam.color,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+
+        // Result Display
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+            child: Column(
+              children: [
+                // Result Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+                  decoration: BoxDecoration(
+                    color:
+                        isCorrect
+                            ? Colors.green.withValues(alpha: 0.1)
+                            : Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.radiusLg,
+                    ),
+                    border: Border.all(
+                      color: isCorrect ? Colors.green : Colors.red,
+                      width: 2,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        isCorrect ? Icons.check_circle : Icons.cancel,
+                        size: 64,
+                        color: isCorrect ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingMd),
+                      Text(
+                        isCorrect ? 'Correct!' : 'Incorrect',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isCorrect ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingMd),
+                      Text(
+                        'The noun was:',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingSm),
+                      Text(
+                        noun,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: currentTeam.color,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (!isCorrect && guess.isNotEmpty) ...[
+                        const SizedBox(height: ThemeConstants.spacingMd),
+                        Text(
+                          'Your guess was:',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: ThemeConstants.spacingSm),
+                        Text(
+                          guess,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.red,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: ThemeConstants.spacingLg),
+
+                // Team Scores
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.radiusLg,
+                    ),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Team Scores',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingMd),
+                      ...game.teams.map(
+                        (team) => Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: ThemeConstants.spacingSm,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: team.color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: ThemeConstants.spacingSm),
+                              Expanded(
+                                child: Text(
+                                  team.name,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                ),
+                              ),
+                              Text(
+                                '${team.score} points',
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: ThemeConstants.spacingLg),
+
+                // Continue Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () => _continueToNextRound(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: currentTeam.color,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          ThemeConstants.radiusMd,
+                        ),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      isCorrect
+                          ? 'Continue to Next Round'
+                          : 'Next Team\'s Turn',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  Widget _buildGameEndContent(Game game, User? currentUser) {
-    return _buildGameInProgressContent(game, currentUser);
+  void _continueToNextRound() {
+    // The game will automatically move to the next phase based on the logic in submitGuess
+    // This button is mainly for user interaction and can trigger any additional logic if needed
   }
 }

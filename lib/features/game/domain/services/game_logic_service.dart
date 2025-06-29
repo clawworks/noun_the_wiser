@@ -107,6 +107,22 @@ class GameLogicService {
     return nouns[random.nextInt(nouns.length)];
   }
 
+  /// Gets all nouns for the specified category
+  static List<String> getNounsForCategory(NounCategory category) {
+    return _defaultNouns[category] ?? [];
+  }
+
+  /// Gets the category for a specific noun
+  static NounCategory getCategoryForNoun(String noun) {
+    for (final entry in _defaultNouns.entries) {
+      if (entry.value.contains(noun)) {
+        return entry.key;
+      }
+    }
+    // Default to person if not found
+    return NounCategory.person;
+  }
+
   /// Gets a random question from the question bank
   static String getRandomQuestion() {
     final random = Random();

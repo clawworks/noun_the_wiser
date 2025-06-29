@@ -14,6 +14,14 @@ class ColorJsonConverter implements JsonConverter<Color, int> {
   int toJson(Color color) => color.toARGB32();
 }
 
+class DateTimeJsonConverter implements JsonConverter<DateTime, String> {
+  const DateTimeJsonConverter();
+  @override
+  DateTime fromJson(String json) => DateTime.parse(json);
+  @override
+  String toJson(DateTime dateTime) => dateTime.toIso8601String();
+}
+
 enum GameStatus { waiting, teamAssignment, inProgress, finished }
 
 enum GamePhase {
@@ -50,13 +58,15 @@ class Game with _$Game {
     @Default([]) List<String> guessedNouns,
     @Default({}) Map<String, List<String>> teamScores,
     @Default({}) Map<String, List<NounCategory>> teamBadges,
-    @Default([]) List<GameTurn> turnHistory,
+    @JsonKey(toJson: _gameTurnListToJson, fromJson: _gameTurnListFromJson)
+    @Default([])
+    List<GameTurn> turnHistory,
     GameTurn? currentTurn,
     @Default(60) int turnTimeLimit, // seconds
-    DateTime? turnStartTime,
-    required DateTime createdAt,
-    DateTime? startedAt,
-    DateTime? endedAt,
+    @DateTimeJsonConverter() DateTime? turnStartTime,
+    @DateTimeJsonConverter() required DateTime createdAt,
+    @DateTimeJsonConverter() DateTime? startedAt,
+    @DateTimeJsonConverter() DateTime? endedAt,
   }) = _Game;
 
   factory Game.fromJson(Map<String, dynamic> json) => _$GameFromJson(json);
@@ -104,8 +114,8 @@ class GameTurn with _$GameTurn {
     String? clue,
     String? guess,
     bool? isCorrect,
-    required DateTime startTime,
-    DateTime? endTime,
+    @DateTimeJsonConverter() required DateTime startTime,
+    @DateTimeJsonConverter() DateTime? endTime,
     @Default(60) int timeLimit,
   }) = _GameTurn;
 
@@ -180,3 +190,9 @@ List<Team> _teamListFromJson(List<dynamic> json) {
       .map((item) => Team.fromJson(item as Map<String, dynamic>))
       .toList();
 }
+
+List<Map<String, dynamic>> _gameTurnListToJson(List<GameTurn> turns) =>
+    turns.map((e) => e.toJson()).toList();
+
+List<GameTurn> _gameTurnListFromJson(List<dynamic> json) =>
+    json.map((e) => GameTurn.fromJson(e as Map<String, dynamic>)).toList();
