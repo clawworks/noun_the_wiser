@@ -136,7 +136,7 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
 
       final updatedGame = game.copyWith(
         teams: updatedTeams,
-        phase: GamePhase.nounSelection,
+        phase: GamePhase.clueGiverSelection,
         status: GameStatus.inProgress,
       );
 

@@ -62,12 +62,25 @@ class _GamePageState extends ConsumerState<GamePage> {
         return _buildTeamAssignmentContent(game, currentUser);
 
       case GameStatus.inProgress:
-        // Show clue giver content when clue givers have been assigned (nounSelection phase)
-        if (game.phase == GamePhase.nounSelection) {
-          return _buildClueGiverContent(game, currentUser);
+        // Show different content based on game phase
+        switch (game.phase) {
+          case GamePhase.clueGiverSelection:
+            return _buildClueGiverContent(game, currentUser);
+          case GamePhase.nounSelection:
+            return _buildNounSelectionContent(game, currentUser);
+          case GamePhase.questionSelection:
+            return _buildQuestionSelectionContent(game, currentUser);
+          case GamePhase.clueGiving:
+            return _buildClueGivingContent(game, currentUser);
+          case GamePhase.guessing:
+            return _buildGuessingContent(game, currentUser);
+          case GamePhase.roundEnd:
+            return _buildRoundEndContent(game, currentUser);
+          case GamePhase.gameEnd:
+            return _buildGameEndContent(game, currentUser);
+          default:
+            return _buildGameInProgressContent(game, currentUser);
         }
-        // For other phases, show a placeholder
-        return _buildGameInProgressContent(game, currentUser);
 
       case GameStatus.finished:
         return _buildGameFinishedContent(game, currentUser);
@@ -1099,13 +1112,10 @@ class _GamePageState extends ConsumerState<GamePage> {
 
   Future<void> _continueToGame(Game game) async {
     try {
-      // For now, just show a message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Game ready! Noun selection coming soon...'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // Move to noun selection phase
+      await ref
+          .read(gameNotifierProvider.notifier)
+          .selectNounCategory(widget.gameId, NounCategory.person);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1227,5 +1237,222 @@ class _GamePageState extends ConsumerState<GamePage> {
     ref
         .read(gameNotifierProvider.notifier)
         .selectClueGiver(widget.gameId, teamId, playerId);
+  }
+
+  void _selectNounCategory(NounCategory category) {
+    ref
+        .read(gameNotifierProvider.notifier)
+        .selectNounCategory(widget.gameId, category);
+  }
+
+  Widget _buildNounSelectionContent(Game game, User? currentUser) {
+    final isHost =
+        game.players.isNotEmpty && game.players.first.id == currentUser?.id;
+
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+          child: Column(
+            children: [
+              Text(
+                'Select Noun Category',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ThemeConstants.spacingMd),
+              Text(
+                'Choose a category for the next round. Each category has different types of nouns to guess.',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+
+        // Category Selection
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+            child: Column(
+              children: [
+                _buildCategoryCard(
+                  NounCategory.person,
+                  'Person',
+                  'Famous people, characters, and personalities',
+                  Icons.person,
+                  game,
+                  currentUser,
+                ),
+                const SizedBox(height: ThemeConstants.spacingMd),
+                _buildCategoryCard(
+                  NounCategory.place,
+                  'Place',
+                  'Cities, landmarks, and locations',
+                  Icons.location_on,
+                  game,
+                  currentUser,
+                ),
+                const SizedBox(height: ThemeConstants.spacingMd),
+                _buildCategoryCard(
+                  NounCategory.thing,
+                  'Thing',
+                  'Objects, items, and concepts',
+                  Icons.category,
+                  game,
+                  currentUser,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Instructions for non-host players
+        if (!isHost) ...[
+          Container(
+            padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+            child: Container(
+              padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+              ),
+              child: Row(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(width: ThemeConstants.spacingMd),
+                  Text(
+                    'Waiting for host to select a category...',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCategoryCard(
+    NounCategory category,
+    String title,
+    String description,
+    IconData icon,
+    Game game,
+    User? currentUser,
+  ) {
+    final isHost =
+        game.players.isNotEmpty && game.players.first.id == currentUser?.id;
+    final isSelected = game.currentCategory == category;
+
+    return Card(
+      child: InkWell(
+        onTap: isHost ? () => _selectNounCategory(category) : null,
+        borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color:
+                  isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.transparent,
+              width: 2,
+            ),
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(ThemeConstants.spacingMd),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.radiusMd,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    color:
+                        isSelected
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: ThemeConstants.spacingMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color:
+                              isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                        ),
+                      ),
+                      const SizedBox(height: ThemeConstants.spacingXs),
+                      Text(
+                        description,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check_circle,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 24,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuestionSelectionContent(Game game, User? currentUser) {
+    return _buildGameInProgressContent(game, currentUser);
+  }
+
+  Widget _buildClueGivingContent(Game game, User? currentUser) {
+    return _buildGameInProgressContent(game, currentUser);
+  }
+
+  Widget _buildGuessingContent(Game game, User? currentUser) {
+    return _buildGameInProgressContent(game, currentUser);
+  }
+
+  Widget _buildRoundEndContent(Game game, User? currentUser) {
+    return _buildGameInProgressContent(game, currentUser);
+  }
+
+  Widget _buildGameEndContent(Game game, User? currentUser) {
+    return _buildGameInProgressContent(game, currentUser);
   }
 }
