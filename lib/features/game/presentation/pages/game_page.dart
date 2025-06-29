@@ -670,6 +670,34 @@ class _GamePageState extends ConsumerState<GamePage> {
               ...teamPlayers.map(
                 (player) => _buildPlayerTile(player, game, currentUser),
               ),
+              const SizedBox(height: ThemeConstants.spacingMd),
+
+              // Team Actions
+              Row(
+                children: [
+                  // Color Picker
+                  IconButton(
+                    onPressed: () => _showColorPicker(team),
+                    icon: const Icon(Icons.palette),
+                    tooltip: 'Change team color',
+                  ),
+                  const SizedBox(width: ThemeConstants.spacingSm),
+
+                  // Switch Team Button (if not in this team)
+                  if (!isCurrentUserInTeam && currentUser != null)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _switchToTeam(team.id),
+                        icon: const Icon(Icons.swap_horiz),
+                        label: const Text('Join Team'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: team.color,
+                          side: BorderSide(color: team.color),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ],
           ),
         ),
@@ -876,6 +904,131 @@ class _GamePageState extends ConsumerState<GamePage> {
                   ),
                 ),
               ],
+
+              const SizedBox(height: ThemeConstants.spacingMd),
+
+              // Clue Giver Selection
+              if (teamPlayers.length > 1) ...[
+                Text(
+                  'Select Clue Giver',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: ThemeConstants.spacingSm),
+                Wrap(
+                  spacing: ThemeConstants.spacingSm,
+                  runSpacing: ThemeConstants.spacingSm,
+                  children:
+                      teamPlayers.map((player) {
+                        final isSelected = clueGiver?.id == player.id;
+                        final isCurrentUser = player.id == currentUser?.id;
+
+                        return GestureDetector(
+                          onTap: () => _selectClueGiver(team.id, player.id),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: ThemeConstants.spacingMd,
+                              vertical: ThemeConstants.spacingSm,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : isCurrentUser
+                                      ? Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer
+                                      : Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(
+                                ThemeConstants.radiusMd,
+                              ),
+                              border: Border.all(
+                                color:
+                                    isSelected
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.psychology,
+                                  size: 16,
+                                  color:
+                                      isSelected
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary
+                                          : isCurrentUser
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimaryContainer
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.7),
+                                ),
+                                const SizedBox(width: ThemeConstants.spacingXs),
+                                Text(
+                                  player.name,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium?.copyWith(
+                                    fontWeight:
+                                        isSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                    color:
+                                        isSelected
+                                            ? Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimary
+                                            : isCurrentUser
+                                            ? Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimaryContainer
+                                            : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                  ),
+                                ),
+                                if (isCurrentUser) ...[
+                                  const SizedBox(
+                                    width: ThemeConstants.spacingXs,
+                                  ),
+                                  Text(
+                                    '(You)',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall?.copyWith(
+                                      color:
+                                          isSelected
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimary
+                                                  .withValues(alpha: 0.8)
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                ),
+              ],
             ],
           ),
         ),
@@ -929,15 +1082,10 @@ class _GamePageState extends ConsumerState<GamePage> {
 
   Future<void> _assignClueGivers(Game game) async {
     try {
-      print('Assigning clue givers for game: ${widget.gameId}');
-      print('Current game phase: ${game.phase}');
-      print('Current game status: ${game.status}');
       await ref
           .read(gameNotifierProvider.notifier)
           .assignClueGivers(widget.gameId);
-      print('Clue givers assigned successfully');
     } catch (e) {
-      print('Error assigning clue givers: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -968,5 +1116,116 @@ class _GamePageState extends ConsumerState<GamePage> {
         );
       }
     }
+  }
+
+  void _showColorPicker(Team team) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Consumer(
+            builder: (context, ref, child) {
+              // Get current game to check which colors are already used
+              final gameAsync = ref.watch(gameNotifierProvider);
+              final game = gameAsync.value;
+              final usedColors =
+                  game?.teams
+                      .where((t) => t.id != team.id) // Exclude current team
+                      .map((t) => t.color)
+                      .toSet() ??
+                  <Color>{};
+
+              final colors = [
+                const Color(0xFF57CC02), // Green
+                const Color(0xFF1CB0F6), // Blue
+                const Color(0xFF6A5FE8), // Purple
+                const Color(0xFFFFC702), // Yellow
+                const Color(0xFFFF6B6B), // Red
+                const Color(0xFFFF8E53), // Orange
+                const Color(0xFF4ECDC4), // Teal
+                const Color(0xFFA8E6CF), // Mint
+              ];
+
+              return AlertDialog(
+                title: const Text('Choose Team Color'),
+                content: Wrap(
+                  spacing: ThemeConstants.spacingMd,
+                  runSpacing: ThemeConstants.spacingMd,
+                  children:
+                      colors.map((color) {
+                        final isSelected = team.color == color;
+                        final isUsed = usedColors.contains(color);
+
+                        return GestureDetector(
+                          onTap:
+                              isUsed
+                                  ? null
+                                  : () {
+                                    Navigator.of(context).pop();
+                                    _changeTeamColor(team.id, color);
+                                  },
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color:
+                                    isSelected
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Colors.transparent,
+                                width: 3,
+                              ),
+                            ),
+                            child:
+                                isSelected
+                                    ? const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                      size: 24,
+                                    )
+                                    : isUsed
+                                    ? const Icon(
+                                      Icons.block,
+                                      color: Colors.white,
+                                      size: 24,
+                                    )
+                                    : null,
+                          ),
+                        );
+                      }).toList(),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              );
+            },
+          ),
+    );
+  }
+
+  void _changeTeamColor(String teamId, Color color) {
+    ref
+        .read(gameNotifierProvider.notifier)
+        .changeTeamColor(widget.gameId, teamId, color);
+  }
+
+  void _switchToTeam(String teamId) {
+    final currentUserAsync = ref.read(authNotifierProvider);
+    final currentUser = currentUserAsync.value;
+    if (currentUser != null) {
+      ref
+          .read(gameNotifierProvider.notifier)
+          .switchPlayerTeam(widget.gameId, currentUser.id, teamId);
+    }
+  }
+
+  void _selectClueGiver(String teamId, String playerId) {
+    ref
+        .read(gameNotifierProvider.notifier)
+        .selectClueGiver(widget.gameId, teamId, playerId);
   }
 }

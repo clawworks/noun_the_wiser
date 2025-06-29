@@ -137,8 +137,35 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
       final updatedGame = game.copyWith(
         teams: updatedTeams,
         phase: GamePhase.nounSelection,
+        status: GameStatus.inProgress,
       );
 
+      await repository.updateGame(gameId, updatedGame);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Manually selects a clue giver for a specific team
+  Future<void> selectClueGiver(
+    String gameId,
+    String teamId,
+    String playerId,
+  ) async {
+    final game = state.value;
+    if (game == null) return;
+
+    try {
+      // Update the specific team with the new clue giver
+      final updatedTeams =
+          game.teams.map((team) {
+            if (team.id == teamId) {
+              return team.copyWith(clueGiverId: playerId);
+            }
+            return team;
+          }).toList();
+
+      final updatedGame = game.copyWith(teams: updatedTeams);
       await repository.updateGame(gameId, updatedGame);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
