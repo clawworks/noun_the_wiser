@@ -195,9 +195,13 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
       // Determine the category from the noun
       final category = GameLogicService.getCategoryForNoun(noun);
 
+      // Set the initial team for the first turn
+      final initialTeamId = game.teams.isNotEmpty ? game.teams.first.id : null;
+
       final updatedGame = game.copyWith(
         currentNoun: noun,
         currentCategory: category,
+        currentTeamId: initialTeamId,
         phase: GamePhase.questionSelection,
       );
 
@@ -248,10 +252,20 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
     if (game == null || game.currentNoun == null) return;
 
     try {
+      print(
+        'GameNotifier: Submitting guess: "$guess" for noun: "${game.currentNoun}"',
+      );
+      print('GameNotifier: Current team ID: ${game.currentTeamId}');
+      print(
+        'GameNotifier: Current teams: ${game.teams.map((t) => '${t.name}(${t.id})').join(', ')}',
+      );
+
       final isCorrect = GameLogicService.isGuessCorrect(
         guess,
         game.currentNoun!,
       );
+
+      print('GameNotifier: Guess is correct: $isCorrect');
 
       // Create a new turn record
       final turn = GameTurn.create(
@@ -269,6 +283,9 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
       );
 
       if (isCorrect) {
+        print(
+          'GameNotifier: Correct guess - awarding badge and checking for winner',
+        );
         // Award badge to the team
         final updatedTeams =
             game.teams.map((team) {
@@ -295,17 +312,25 @@ class GameNotifier extends StateNotifier<AsyncValue<Game?>> {
 
         await repository.updateGame(gameId, updatedGame);
       } else {
+        print('GameNotifier: Incorrect guess - switching to next team');
         // Move to next team
         final nextTeamId = GameLogicService.getNextTeamId(game);
+        print('GameNotifier: Next team ID: $nextTeamId');
+
         final updatedGame = game.copyWith(
           currentTeamId: nextTeamId,
           turnHistory: [...game.turnHistory, turn],
           phase: GamePhase.questionSelection,
         );
 
+        print(
+          'GameNotifier: Updated game - new team ID: ${updatedGame.currentTeamId}, phase: ${updatedGame.phase}',
+        );
         await repository.updateGame(gameId, updatedGame);
+        print('GameNotifier: Game updated successfully');
       }
     } catch (e, st) {
+      print('GameNotifier: Error submitting guess: $e');
       state = AsyncValue.error(e, st);
     }
   }
