@@ -23,14 +23,17 @@ class _TeamAssignmentPageState extends ConsumerState<TeamAssignmentPage> {
   @override
   void initState() {
     super.initState();
+    print('TeamAssignmentPage initState called for game: ${widget.gameId}');
     // Watch the game for real-time updates
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('TeamAssignmentPage starting to watch game');
       ref.read(gameNotifierProvider.notifier).watchGame(widget.gameId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    print('TeamAssignmentPage build called');
     final gameAsync = ref.watch(gameNotifierProvider);
     final currentUserAsync = ref.watch(authNotifierProvider);
 
@@ -45,7 +48,7 @@ class _TeamAssignmentPageState extends ConsumerState<TeamAssignmentPage> {
             return currentUserAsync.when(
               data:
                   (currentUser) =>
-                      _buildTeamAssignmentContent(game, currentUser),
+                      buildTeamAssignmentContent(game, currentUser),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => Center(child: Text('Error: $error')),
             );
@@ -57,7 +60,7 @@ class _TeamAssignmentPageState extends ConsumerState<TeamAssignmentPage> {
     );
   }
 
-  Widget _buildTeamAssignmentContent(Game game, User? currentUser) {
+  Widget buildTeamAssignmentContent(Game game, User? currentUser) {
     final teams = game.teams;
     final isHost =
         game.players.isNotEmpty && game.players.first.id == currentUser?.id;

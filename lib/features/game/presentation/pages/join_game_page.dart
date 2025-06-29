@@ -4,7 +4,8 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/utils/join_code_generator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/game_providers.dart';
-import 'game_lobby_page.dart';
+import '../../domain/game.dart';
+import 'game_page.dart';
 
 class JoinGamePage extends ConsumerStatefulWidget {
   const JoinGamePage({super.key});
@@ -71,7 +72,7 @@ class _JoinGamePageState extends ConsumerState<JoinGamePage> {
     final game = ref.read(gameNotifierProvider).value;
     if (game != null) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => GameLobbyPage(gameId: game.id)),
+        MaterialPageRoute(builder: (context) => GamePage(gameId: game.id)),
       );
     }
   }

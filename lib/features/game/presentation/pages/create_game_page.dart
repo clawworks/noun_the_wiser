@@ -6,7 +6,7 @@ import '../../../../core/utils/join_code_generator.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/game_providers.dart';
 import '../../domain/game.dart';
-import 'game_lobby_page.dart';
+import 'game_page.dart';
 
 class CreateGamePage extends ConsumerStatefulWidget {
   const CreateGamePage({super.key});
@@ -105,7 +105,7 @@ class _CreateGamePageState extends ConsumerState<CreateGamePage> {
     final game = ref.read(gameNotifierProvider).value;
     if (game != null) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => GameLobbyPage(gameId: game.id)),
+        MaterialPageRoute(builder: (context) => GamePage(gameId: game.id)),
       );
     }
   }

@@ -43,7 +43,7 @@ class _ClueGiverSelectionPageState
             }
 
             return currentUserAsync.when(
-              data: (currentUser) => _buildClueGiverContent(game, currentUser),
+              data: (currentUser) => buildClueGiverContent(game, currentUser),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => Center(child: Text('Error: $error')),
             );
@@ -55,7 +55,7 @@ class _ClueGiverSelectionPageState
     );
   }
 
-  Widget _buildClueGiverContent(Game game, User? currentUser) {
+  Widget buildClueGiverContent(Game game, User? currentUser) {
     final teams = game.teams;
     final isHost =
         game.players.isNotEmpty && game.players.first.id == currentUser?.id;

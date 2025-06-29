@@ -6,7 +6,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/domain/user.dart';
 import '../providers/game_providers.dart';
 import '../../domain/game.dart';
-import '../pages/team_assignment_page.dart';
+import 'game_page.dart';
 
 class GameLobbyPage extends ConsumerStatefulWidget {
   final String gameId;
@@ -49,7 +49,7 @@ class _GameLobbyPageState extends ConsumerState<GameLobbyPage> {
           data:
               (game) =>
                   game != null
-                      ? _buildLobbyContent(game, currentUser)
+                      ? buildLobbyContent(game, currentUser)
                       : _buildErrorState(),
           loading: () => _buildLoadingState(),
           error: (error, stack) => _buildErrorState(),
@@ -58,7 +58,7 @@ class _GameLobbyPageState extends ConsumerState<GameLobbyPage> {
     );
   }
 
-  Widget _buildLobbyContent(Game game, User? currentUser) {
+  Widget buildLobbyContent(Game game, User? currentUser) {
     final isHost = currentUser?.id == game.players.first.id;
     final canStartGame = game.players.length >= 2 && isHost;
 
@@ -449,12 +449,16 @@ class _GameLobbyPageState extends ConsumerState<GameLobbyPage> {
       print('Game started successfully');
 
       if (mounted) {
-        // Navigate to team assignment page
+        print('About to navigate to GamePage');
+        // Navigate to game page
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => TeamAssignmentPage(gameId: widget.gameId),
+            builder: (context) => GamePage(gameId: widget.gameId),
           ),
         );
+        print('Navigation to GamePage completed');
+      } else {
+        print('Widget not mounted, cannot navigate');
       }
     } catch (e, stackTrace) {
       print('Error starting game: $e');
