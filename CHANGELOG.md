@@ -8,6 +8,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Complete Game Flow Implementation**
+  - **State-Based Page Switching**: Replaced navigation-based flow with single GamePage widget
+    - Dynamic content based on game status and phase
+    - Seamless transitions between all game phases
+    - Real-time UI updates without navigation conflicts
+  - **Full Game Phase Support**:
+    - Lobby phase with join code sharing and player management
+    - Team assignment with color customization and player switching
+    - Manual clue giver selection with host controls
+    - Noun selection by clue giver
+    - Question selection by team (not clue giver)
+    - Clue giving phase with validation
+    - Guessing phase with correct/incorrect detection
+    - Round end and game end phases (placeholders)
+  - **Enhanced Team Management**:
+    - Team color picker with reactive UI (Riverpod Consumer)
+    - Player team switching during gameplay
+    - Manual clue giver assignment via menu
+    - Team switching menu accessible from game status banner
+  - **Improved Game Logic**:
+    - Proper turn progression between teams
+    - Correct answer detection and scoring
+    - Game phase transitions with validation
+    - Current team tracking throughout gameplay
+
+- **UI/UX Improvements**
+  - **Keyboard-Friendly Interface**:
+    - Scrollable text fields to prevent overflow
+    - Keyboard dismissal on tap outside
+    - Prevented content resizing issues on mobile
+    - Fixed iPhone 11 keyboard coverage problems
+  - **Enhanced Game Status Banner**:
+    - Menu button for team switching and clue giver assignment
+    - Real-time game status and phase display
+    - Current team and turn information
+  - **Responsive Design**:
+    - Flexible text widgets to prevent overflow
+    - Proper spacing and layout on all screen sizes
+    - Mobile-optimized input fields and buttons
+
+- **Technical Enhancements**
+  - **Firebase Serialization Fixes**:
+    - Added DateTimeJsonConverter for proper DateTime handling
+    - Fixed "Attempting to box non-Dart object" errors
+    - Custom JSON converters for complex nested objects
+    - Proper toJson/fromJson helpers for turnHistory
+  - **State Management Improvements**:
+    - TextEditingController lifecycle management
+    - Proper disposal of controllers to prevent memory leaks
+    - Reactive UI updates with Riverpod Consumer
+    - Fixed race conditions in team switching
+  - **Error Handling**:
+    - Comprehensive error catching and logging
+    - Graceful handling of Firebase serialization errors
+    - Better user feedback for invalid operations
+
 - **Project Foundation & Architecture**
   - Set up clean architecture folder structure with feature-based organization
   - Implemented Riverpod for state management
@@ -92,11 +148,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Proper page transitions
 
 ### Changed
+- **Game Flow Architecture**: Replaced navigation-based flow with state-based UI switching
+- **Team Switching**: Moved from floating action button to menu in game status banner
+- **Clue Giver Assignment**: Enhanced UI with better visual feedback and controls
+- **Game Phase Logic**: Simplified flow by removing separate category selection phase
 - Updated game lobby to navigate to team assignment page instead of showing "coming soon"
 - Enhanced team assignment page with proper auth provider integration
 - Improved UI consistency across all game phases
 
 ### Fixed
+- **UI Overflow Issues**: Fixed RenderFlex overflow in game page
+  - Made text widgets flexible with proper constraints
+  - Added scrollable containers where needed
+  - Prevented content overflow on smaller screens
+- **Keyboard Issues**: Fixed iPhone 11 keyboard coverage problems
+  - Made text fields scrollable
+  - Added keyboard dismissal on tap outside
+  - Prevented content resizing issues
+- **Team Switching Logic**: Fixed currentTeamId being null during gameplay
+  - Set currentTeamId when noun is selected
+  - Proper team progression after incorrect guesses
+  - Fixed race conditions in team switching
+- **TextEditingController Issues**: Fixed unresponsive text fields on team two's turn
+  - Moved controllers to widget state
+  - Proper disposal to prevent memory leaks
+  - Fixed controller lifecycle management
+- **Firebase Serialization**: Fixed "Attempting to box non-Dart object" errors
+  - Added custom toJson/fromJson helpers for turnHistory
+  - Proper DateTime handling with custom converters
+  - Fixed complex nested object serialization
 - **Team Serialization Error**: Fixed `Invalid argument: Instance of '_$TeamImpl'` error
   - Added custom JSON converter for Team lists in Game model
   - Updated `_teamListToJson` and `_teamListFromJson` functions
@@ -140,26 +220,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Game logic and core gameplay mechanics implemented
 - ✅ Team management and assignment system working
 - ✅ Turn management and guessing system ready
-- 🔄 Game UI for new phases (team assignment, clue giving, etc.)
+- ✅ Complete game flow with all phases implemented
+- ✅ Team switching and manual clue giver assignment
+- ✅ Keyboard-friendly UI with mobile optimization
+- ✅ Firebase serialization issues resolved
 - 🔄 Game log and team chat functionality (planned)
 - 🔄 Online status tracking (planned)
 
 ### Next Milestones
-1. **Game UI Implementation**
-   - Team assignment screen
-   - Clue giver selection interface
-   - Noun category selection
-   - Question and clue input screens
-   - Guessing interface
-   - Game log display
-
-2. **Enhanced Features**
+1. **Enhanced Features**
+   - Game log implementation
    - Team chat functionality
    - Online status tracking
-   - Game log implementation
    - Sound effects and animations
 
-3. **Production Readiness**
+2. **Production Readiness**
    - App store preparation
    - Testing and bug fixes
    - Performance monitoring

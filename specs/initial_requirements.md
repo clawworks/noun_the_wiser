@@ -44,6 +44,19 @@ The app should be built with Flutter to be used on iOS, Android and Web, and hav
 
 - There should be a simple team chat functionality so that team members could chat about possible guesses for nouns without the other team seeing or hearing their ideas. 
 
+## Screen Layout
+
+- At any point in time, I'd like each player to be able to see the following things on their screen, or at least easily accessible (eg. by a button)
+    - A banner to say the game status or phase they are in (eg. waiting for team 1 cluegiver to pick a noun, or waiting for you to pick a question, etc.)
+    - Which teams turn it is (and their color to indicate this)
+    - Both teams and their team members, indicate who is online or offline
+    - How many category badges each team has won so far (and how many they have left)
+    - The ability to switch teams, or leave the game (perhaps from a menu button somewhere)
+    - What the current category is (Person, Place or Thing)
+    - The game log (what questions and answers have been given)
+
+I know this is a lot to include in the screen, but codenames.game does it pretty well, everything you need to see about the entire state of the game is available to you.
+
 ## Theming
 
 - The app should use light and dark mode, and default to the users device preference. 
@@ -64,6 +77,7 @@ The app should be built with Flutter to be used on iOS, Android and Web, and hav
 - Interactions with the Firestore DB should be transactions so that users do not overwrite each other's inputs or clash the game state, etc. 
 - There should be a clear and proper separation of concerns by creating a suitable folder structure.
 - Prefer smaller, readable widgets that can be composed rather than large ones.
+- Do NOT make lots of widget functions, extract full widgets and return them where needed rather than calling a widget function.
 - Prefer using flexible values and padding over hardcoded sizes when creating widgets inside rows/columns, ensuring UI adapts to various screen sizes properly.
 - Use `log` from `dart:developer` rather than `print` or `debugPrint` for logging.
 - Address all linter errors/warnings/hints, keep up with the latest recommendations.

@@ -18,6 +18,9 @@ class GamePage extends ConsumerStatefulWidget {
 }
 
 class _GamePageState extends ConsumerState<GamePage> {
+  final TextEditingController _clueController = TextEditingController();
+  final TextEditingController _guessController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +28,13 @@ class _GamePageState extends ConsumerState<GamePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(gameNotifierProvider.notifier).watchGame(widget.gameId);
     });
+  }
+
+  @override
+  void dispose() {
+    _clueController.dispose();
+    _guessController.dispose();
+    super.dispose();
   }
 
   @override
@@ -47,7 +57,13 @@ class _GamePageState extends ConsumerState<GamePage> {
               }
 
               return currentUserAsync.when(
-                data: (currentUser) => _buildGameContent(game, currentUser),
+                data:
+                    (currentUser) => Column(
+                      children: [
+                        _buildGameStatusBanner(game, currentUser),
+                        Expanded(child: _buildGameContent(game, currentUser)),
+                      ],
+                    ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, stack) => Center(child: Text('Error: $error')),
               );
@@ -2163,7 +2179,6 @@ class _GamePageState extends ConsumerState<GamePage> {
   }
 
   Widget _buildClueInput(Game game, User? currentUser) {
-    final TextEditingController clueController = TextEditingController();
     final currentTeam = game.teams.firstWhere(
       (team) => team.id == game.currentTeamId,
       orElse: () => game.teams.first,
@@ -2174,7 +2189,7 @@ class _GamePageState extends ConsumerState<GamePage> {
         Expanded(
           child: SingleChildScrollView(
             child: TextField(
-              controller: clueController,
+              controller: _clueController,
               maxLines: null,
               minLines: 3,
               textInputAction: TextInputAction.done,
@@ -2201,11 +2216,11 @@ class _GamePageState extends ConsumerState<GamePage> {
           height: 56,
           child: ElevatedButton(
             onPressed: () {
-              final clue = clueController.text.trim();
+              final clue = _clueController.text.trim();
               if (clue.isNotEmpty) {
                 _submitClue(clue);
                 // Clear the text field after submission
-                clueController.clear();
+                _clueController.clear();
                 // Dismiss keyboard
                 FocusScope.of(context).unfocus();
               }
@@ -2399,7 +2414,6 @@ class _GamePageState extends ConsumerState<GamePage> {
   }
 
   Widget _buildGuessInput(Game game, User? currentUser) {
-    final TextEditingController guessController = TextEditingController();
     final currentTeam = game.teams.firstWhere(
       (team) => team.id == game.currentTeamId,
       orElse: () => game.teams.first,
@@ -2410,7 +2424,7 @@ class _GamePageState extends ConsumerState<GamePage> {
         Expanded(
           child: SingleChildScrollView(
             child: TextField(
-              controller: guessController,
+              controller: _guessController,
               maxLines: null,
               minLines: 3,
               textInputAction: TextInputAction.done,
@@ -2437,11 +2451,11 @@ class _GamePageState extends ConsumerState<GamePage> {
           height: 56,
           child: ElevatedButton(
             onPressed: () {
-              final guess = guessController.text.trim();
+              final guess = _guessController.text.trim();
               if (guess.isNotEmpty) {
                 _submitGuess(guess);
                 // Clear the text field after submission
-                guessController.clear();
+                _guessController.clear();
                 // Dismiss keyboard
                 FocusScope.of(context).unfocus();
               }
@@ -2694,5 +2708,327 @@ class _GamePageState extends ConsumerState<GamePage> {
   void _continueToNextRound() {
     // The game will automatically move to the next phase based on the logic in submitGuess
     // This button is mainly for user interaction and can trigger any additional logic if needed
+  }
+
+  Widget _buildGameStatusBanner(Game game, User? currentUser) {
+    final currentTeam =
+        game.currentTeamId != null
+            ? game.teams.firstWhere(
+              (team) => team.id == game.currentTeamId,
+              orElse: () => game.teams.first,
+            )
+            : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: ThemeConstants.spacingLg,
+        vertical: ThemeConstants.spacingMd,
+      ),
+      decoration: BoxDecoration(
+        color:
+            currentTeam?.color.withValues(alpha: 0.1) ??
+            Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(
+          bottom: BorderSide(
+            color: currentTeam?.color ?? Theme.of(context).colorScheme.outline,
+            width: 2,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          if (currentTeam != null) ...[
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: currentTeam.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: ThemeConstants.spacingMd),
+          ],
+          Expanded(
+            child: Text(
+              _getGameStatusText(game, currentUser),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color:
+                    currentTeam?.color ??
+                    Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          if (currentUser != null) ...[
+            IconButton(
+              onPressed: () => _showGameMenu(game, currentUser),
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'Game Menu',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _getGameStatusText(Game game, User? currentUser) {
+    final currentTeam =
+        game.currentTeamId != null
+            ? game.teams.firstWhere(
+              (team) => team.id == game.currentTeamId,
+              orElse: () => game.teams.first,
+            )
+            : null;
+
+    if (currentTeam == null) {
+      return 'Game in Progress';
+    } else if (game.status == GameStatus.teamAssignment) {
+      return 'Teams Assigned';
+    } else if (game.status == GameStatus.inProgress) {
+      return 'Game in Progress';
+    } else if (game.status == GameStatus.finished) {
+      return 'Game Finished';
+    } else {
+      return 'Unknown Status';
+    }
+  }
+
+  void _showGameMenu(Game game, User currentUser) {
+    final currentTeam = game.teams.firstWhere(
+      (team) => team.playerIds.contains(currentUser.id),
+      orElse: () => game.teams.first,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder:
+          (context) => Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            padding: const EdgeInsets.all(ThemeConstants.spacingLg),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Game Menu',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingLg),
+
+                  // Team switching section
+                  Text(
+                    'Switch Team',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+
+                  ...game.teams.map((team) {
+                    final isCurrentTeam = team.id == currentTeam.id;
+                    final isInTeam = team.playerIds.contains(currentUser.id);
+
+                    return ListTile(
+                      leading: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: team.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      title: Text(
+                        team.name,
+                        style: TextStyle(
+                          fontWeight:
+                              isCurrentTeam
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                        ),
+                      ),
+                      subtitle: Text(
+                        isInTeam
+                            ? 'Current Team'
+                            : '${team.playerIds.length} players',
+                      ),
+                      trailing:
+                          isInTeam
+                              ? const Icon(Icons.check, color: Colors.green)
+                              : const Icon(Icons.swap_horiz),
+                      onTap:
+                          isInTeam
+                              ? null
+                              : () {
+                                Navigator.of(context).pop();
+                                _switchToTeam(team.id);
+                              },
+                    );
+                  }),
+
+                  const SizedBox(height: ThemeConstants.spacingLg),
+
+                  // Clue giver assignment section
+                  Text(
+                    'Assign Clue Givers',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+
+                  ...game.teams.map((team) {
+                    final currentClueGiver =
+                        team.clueGiverId != null
+                            ? game.players.firstWhere(
+                              (player) => player.id == team.clueGiverId,
+                              orElse: () => game.players.first,
+                            )
+                            : null;
+
+                    return ExpansionTile(
+                      leading: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: team.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      title: Text(team.name),
+                      subtitle: Text(
+                        currentClueGiver != null
+                            ? 'Clue giver: ${currentClueGiver.name}'
+                            : 'No clue giver assigned',
+                      ),
+                      children:
+                          team.playerIds.map((playerId) {
+                            final player = game.players.firstWhere(
+                              (p) => p.id == playerId,
+                              orElse: () => game.players.first,
+                            );
+                            final isClueGiver = team.clueGiverId == playerId;
+
+                            return ListTile(
+                              leading: Icon(
+                                isClueGiver
+                                    ? Icons.person
+                                    : Icons.person_outline,
+                                color: isClueGiver ? team.color : null,
+                              ),
+                              title: Text(player.name),
+                              subtitle: Text(
+                                isClueGiver
+                                    ? 'Current clue giver'
+                                    : 'Team member',
+                              ),
+                              trailing:
+                                  isClueGiver
+                                      ? const Icon(
+                                        Icons.check,
+                                        color: Colors.green,
+                                      )
+                                      : const Icon(Icons.edit),
+                              onTap:
+                                  isClueGiver
+                                      ? null
+                                      : () {
+                                        Navigator.of(context).pop();
+                                        _assignManualClueGiver(
+                                          team.id,
+                                          playerId,
+                                        );
+                                      },
+                            );
+                          }).toList(),
+                    );
+                  }),
+
+                  const SizedBox(height: ThemeConstants.spacingLg),
+
+                  // Game info section
+                  Text(
+                    'Game Info',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: ThemeConstants.spacingMd),
+
+                  ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: const Text('Game Log'),
+                    subtitle: const Text('View game history'),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _showGameLog(game);
+                    },
+                  ),
+
+                  ListTile(
+                    leading: const Icon(Icons.chat_bubble_outline),
+                    title: const Text('Team Chat'),
+                    subtitle: const Text('Chat with your team'),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _showTeamChat(game, currentUser);
+                    },
+                  ),
+
+                  const SizedBox(height: ThemeConstants.spacingLg),
+
+                  // Leave game option
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _leaveGame();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        foregroundColor: Theme.of(context).colorScheme.onError,
+                      ),
+                      child: const Text('Leave Game'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showGameLog(Game game) {
+    // TODO: Implement game log view
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Game log coming soon!')));
+  }
+
+  void _showTeamChat(Game game, User currentUser) {
+    // TODO: Implement team chat view
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Team chat coming soon!')));
+  }
+
+  void _leaveGame() {
+    // TODO: Implement leave game functionality
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Leave game coming soon!')));
+  }
+
+  void _assignManualClueGiver(String teamId, String playerId) {
+    ref
+        .read(gameNotifierProvider.notifier)
+        .assignManualClueGiver(widget.gameId, teamId, playerId);
   }
 }
